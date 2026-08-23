@@ -23,6 +23,16 @@ export default async function PresenterDetail({ params }: { params: Promise<{ sl
         <p className="text-xs uppercase tracking-[0.28em] text-gold-400">{presenter.isCustom ? "My Presenter" : "Library"}</p>
         <h1 className="font-display text-5xl">{presenter.name}</h1>
         <p className="text-mist-300">{presenter.bio}</p>
+        {presenter.slug === "yuna-han" ? (
+          <video
+            className="w-full overflow-hidden rounded-3xl"
+            src="/demos/yuna-fashion.mp4"
+            poster="/presenters/yuna-han.png"
+            controls
+            playsInline
+            preload="metadata"
+          />
+        ) : null}
         <div className="flex flex-wrap gap-2">
           {presenter.categories.split(",").map((c) => (
             <Pill key={c}>{c}</Pill>

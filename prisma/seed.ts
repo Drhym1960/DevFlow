@@ -30,6 +30,14 @@ const templates = [
     scenePlan: JSON.stringify(["presenter-full", "product-only", "presenter-pip", "logo-cta"]),
   },
   {
+    name: "Fashion lookbook",
+    category: "Fashion & Beauty",
+    goal: "product-ad",
+    description: "Standing presenter talks fashion while walking, turning and gesturing; lookbook stills sit beside her.",
+    format: "vertical",
+    scenePlan: JSON.stringify(["presenter-full", "presenter-left-product-right", "presenter-right-product-left", "logo-cta"]),
+  },
+  {
     name: "MysticTxt sample",
     category: "Apps & Software",
     goal: "app-promo",
@@ -50,7 +58,14 @@ async function main() {
   for (const p of LIBRARY_PRESENTERS) {
     await db.presenter.upsert({
       where: { slug: p.slug },
-      update: {},
+      update: {
+        bio: p.bio,
+        personality: p.personality,
+        professionalStyle: p.professionalStyle,
+        clothingStyle: p.clothingStyle,
+        studioStyle: p.studioStyle,
+        portraitUrl: p.portraitUrl,
+      },
       create: {
         name: p.name,
         slug: p.slug,
@@ -71,6 +86,7 @@ async function main() {
         studioStyle: p.studioStyle,
         bio: p.bio,
         portraitSeed: p.slug,
+        portraitUrl: p.portraitUrl,
         isCustom: false,
       },
     });

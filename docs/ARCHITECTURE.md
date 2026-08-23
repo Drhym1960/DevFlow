@@ -88,7 +88,7 @@ All providers implement typed ports in `src/lib/ai/ports.ts` and are resolved by
 | `TranslationProvider` | Script + caption translation | OpenAI-compatible, Studio translator |
 | `TtsProvider` | Voice audio | OpenAI TTS, ElevenLabs (config) |
 | `ImageProvider` | Presenter / scene stills | OpenAI Images (config) |
-| `MotionProvider` | Photo or model + audio → talking performance | SadTalker (local), D-ID, Fal |
+| `MotionProvider` | Photo or model + audio → talking performance | Sora (full-body, `MOTION_PROVIDER=sora`), SadTalker (local), D-ID, Fal |
 | `AvatarProvider` | Consistent presenter identity | Studio portrait engine |
 | `LipSyncProvider` | Speech-aligned mouth/face cues | Studio viseme mapper |
 | `VideoComposer` | Scene layouts + ffmpeg render | Local compositor |

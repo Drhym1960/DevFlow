@@ -17,6 +17,7 @@ export type LibraryPresenter = {
   categories: string[];
   studioStyle: string;
   bio: string;
+  portraitUrl?: string;
 };
 
 export const LIBRARY_PRESENTERS: LibraryPresenter[] = [
@@ -39,6 +40,7 @@ export const LIBRARY_PRESENTERS: LibraryPresenter[] = [
     categories: ["Fashion & Beauty", "Luxury", "Ecommerce"],
     studioStyle: "Editorial fashion set",
     bio: "A Lagos-born studio presenter with couture posture and a calm luxury cadence. Built for beauty, fashion and premium retail films.",
+    portraitUrl: "/presenters/amara-okonkwo.png",
   },
   {
     name: "Chinedu Adebayo",
@@ -159,6 +161,27 @@ export const LIBRARY_PRESENTERS: LibraryPresenter[] = [
     categories: ["Fashion & Beauty", "Lifestyle", "Ecommerce"],
     studioStyle: "Wellness spa light",
     bio: "A Seoul beauty presenter with restrained gesture and luminous stillness. Built for skincare, fashion and lifestyle films.",
+  },
+  {
+    name: "Yuna Han",
+    slug: "yuna-han",
+    gender: "female",
+    ageRange: "26-32",
+    region: "South Korea",
+    skinTone: "Porcelain peach",
+    hair: "Long dark layers, soft center part",
+    bodyType: "Slim editorial",
+    clothingStyle: "Cream ribbed knit and tailored trousers",
+    professionalStyle: "Standing fashion presenter",
+    personality: "Warm, expressive, camera-native",
+    voiceId: "yuna-warm",
+    accent: "Korean",
+    languages: ["ko", "en"],
+    speakingTone: "Warm",
+    categories: ["Fashion & Beauty", "Lifestyle", "Luxury"],
+    studioStyle: "Editorial fashion set",
+    bio: "A Seoul fashion presenter who talks with her whole body — walking, turning, pointing, and smiling while she speaks. Built for apparel, lookbooks and lifestyle films.",
+    portraitUrl: "/presenters/yuna-han.png",
   },
   {
     name: "Min-jun Kim",

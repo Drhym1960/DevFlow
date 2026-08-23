@@ -188,3 +188,9 @@ export function portraitDataUri(p: Parameters<typeof traitsFromPresenter>[0]) {
   const traits = traitsFromPresenter(p);
   return `data:image/svg+xml;utf8,${encodeURIComponent(portraitSvg(traits, 640, p.name))}`;
 }
+
+export function portraitSrc(
+  p: Parameters<typeof traitsFromPresenter>[0] & { portraitUrl?: string | null },
+) {
+  return p.portraitUrl || portraitDataUri(p);
+}

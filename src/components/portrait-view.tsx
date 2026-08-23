@@ -1,4 +1,4 @@
-import { portraitDataUri } from "@/lib/presenters/portrait";
+import { portraitSrc } from "@/lib/presenters/portrait";
 
 export function PortraitView({
   presenter,
@@ -13,11 +13,12 @@ export function PortraitView({
     portraitSeed: string;
     studioStyle?: string | null;
     region?: string | null;
+    portraitUrl?: string | null;
   };
   className?: string;
 }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={portraitDataUri(presenter)} alt={presenter.name} className={`h-full w-full object-cover ${className}`} />
+    <img src={portraitSrc(presenter)} alt={presenter.name} className={`h-full w-full object-cover ${className}`} />
   );
 }

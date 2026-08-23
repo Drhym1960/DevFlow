@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FORMATS, GOALS, LANGUAGES, MUSIC_BEDS, TONES } from "@/lib/constants";
-import { portraitDataUri } from "@/lib/presenters/portrait";
+import { portraitSrc } from "@/lib/presenters/portrait";
 import { Area, Button, Field, Pill, Select } from "./ui";
 
 type Presenter = {
@@ -22,6 +22,7 @@ type Presenter = {
   clothingStyle: string;
   portraitSeed: string;
   studioStyle: string;
+  portraitUrl?: string | null;
 };
 
 type Kit = { id: string; name: string; businessName: string; productInfo: string; website: string | null; defaultCta: string; colors: string };
@@ -236,7 +237,7 @@ export function AdWizard({
                 className={`glass overflow-hidden rounded-3xl text-left ${form.presenterId === p.id ? "ring-2 ring-gold-400" : ""}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={portraitDataUri(p)} alt={p.name} className="aspect-[4/5] w-full object-cover" />
+                <img src={portraitSrc(p)} alt={p.name} className="aspect-[4/5] w-full object-cover" />
                 <div className="space-y-1 p-4">
                   <p className="font-display text-xl">{p.name}</p>
                   <p className="text-xs text-mist-500">{p.voiceId} · {p.languages} · {p.speakingTone}</p>

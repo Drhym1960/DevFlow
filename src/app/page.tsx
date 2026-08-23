@@ -5,12 +5,20 @@ import { Button } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
+const FEATURED = [
+  "yuna-han",
+  "amara-okonkwo",
+  "sofia-alvarez",
+  "seo-yeon-park",
+  "maya-chen",
+  "chinedu-adebayo",
+  "layla-al-hassan",
+  "jordan-hale",
+];
+
 export default async function LandingPage() {
-  const presenters = await db.presenter.findMany({
-    where: { isCustom: false },
-    take: 8,
-    orderBy: { name: "asc" },
-  });
+  const all = await db.presenter.findMany({ where: { isCustom: false } });
+  const presenters = FEATURED.map((slug) => all.find((p) => p.slug === slug)).filter(Boolean) as typeof all;
 
   return (
     <div>
@@ -35,8 +43,8 @@ export default async function LandingPage() {
           Choose your presenter. Upload your brand. Let AI create the advertisement.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-mist-300">
-          Upload your photo and become the speaker — or choose a realistic model. A motion model makes them talk and move
-          like a presenter, while your product screens sit beside them.
+          Upload your photo and become the speaker — or choose a realistic model. They walk, turn, point, and smile while
+          they talk, and your product screens sit beside them.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/register">
@@ -45,6 +53,25 @@ export default async function LandingPage() {
           <Link href="/presenters">
             <Button variant="ghost">Browse presenters</Button>
           </Link>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <p className="text-xs uppercase tracking-[0.32em] text-gold-400">Fashion presenter</p>
+        <h2 className="mt-3 max-w-3xl font-display text-4xl">Yuna Han, standing and moving while she talks fashion.</h2>
+        <p className="mt-4 max-w-2xl text-mist-300">
+          An original Seoul fashion model — not a celebrity lookalike. She walks, turns, points, and smiles on camera
+          while lookbook stills stay beside her.
+        </p>
+        <div className="mt-8 overflow-hidden rounded-[32px] bg-ink-950">
+          <video
+            className="aspect-[9/16] w-full max-w-md mx-auto"
+            src="/demos/yuna-fashion.mp4"
+            poster="/presenters/yuna-han.png"
+            controls
+            playsInline
+            preload="metadata"
+          />
         </div>
       </section>
 
