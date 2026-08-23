@@ -8,7 +8,7 @@ export const elevenLabsTtsProvider: TtsProvider = {
     label: "ElevenLabs TTS",
     configured: Boolean(process.env.ELEVENLABS_API_KEY),
     requires: ["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"],
-    notes: "Optional voice vendor. Falls back to the OpenAI TTS adapter, then to aligned visemes only.",
+    notes: "Studio voice for every presenter. Mixed over the full-body performance.",
   }),
   async synthesize(input) {
     if (!process.env.ELEVENLABS_API_KEY) return openaiTtsProvider.synthesize(input);

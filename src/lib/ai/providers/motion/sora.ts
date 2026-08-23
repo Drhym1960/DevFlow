@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import { spawn } from "child_process";
 import type { MotionProvider } from "./types";
+import { motionPromptFor } from "@/lib/presenters/motion-prompt";
 
 function run(cmd: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
@@ -17,8 +18,7 @@ function run(cmd: string, args: string[]) {
   });
 }
 
-const MOTION_PROMPT =
-  "Photoreal vertical fashion-studio film of the original person in the reference still. She stands, talks to camera with a natural smile, then moves like a real presenter: walks a few steps, turns her body, looks back over her shoulder, points, and gestures with both hands. Hair and clothing respond to motion. No celebrity likeness, no logos, no readable text, no subtitles.";
+const DEFAULT_PROMPT = motionPromptFor();
 
 type SoraJob = {
   id: string;
@@ -27,10 +27,10 @@ type SoraJob = {
   error?: { message?: string } | null;
 };
 
-async function createJob(imagePath: string, key: string) {
+async function createJob(imagePath: string, key: string, prompt: string) {
   const form = new FormData();
   form.set("model", process.env.SORA_MODEL ?? "sora-2");
-  form.set("prompt", process.env.SORA_PROMPT ?? MOTION_PROMPT);
+  form.set("prompt", prompt);
   form.set("seconds", process.env.SORA_SECONDS ?? "12");
   form.set("size", "720x1280");
   const jpeg = await readFile(imagePath);
@@ -65,10 +65,10 @@ export const soraMotion: MotionProvider = {
     label: "Sora full-body motion",
     configured: Boolean(process.env.OPENAI_API_KEY),
     requires: ["OPENAI_API_KEY"],
-    notes: "Image-guided full-body presenter: walk, turn, point, smile while talking. Mixes studio voice over the generated performance. Set MOTION_PROVIDER=sora.",
+    notes: "Default studio motion. Any library model or uploaded client photo performs like Yuna Han: walk, turn, point, smile while talking. Mixes studio voice over the performance.",
   }),
 
-  async animate({ sourceImage, audioPath, outPath }) {
+  async animate({ sourceImage, audioPath, outPath, prompt }) {
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new Error("OPENAI_API_KEY is not set");
     await mkdir(path.dirname(outPath), { recursive: true });
@@ -83,7 +83,7 @@ export const soraMotion: MotionProvider = {
       "2",
       ref,
     ]);
-    const created = await createJob(ref, key);
+    const created = await createJob(ref, key, prompt || process.env.SORA_PROMPT || DEFAULT_PROMPT);
     await pollJob(created.id, key);
     const raw = path.join(path.dirname(outPath), "sora-raw.mp4");
     const content = await fetch(`https://api.openai.com/v1/videos/${created.id}/content`, {

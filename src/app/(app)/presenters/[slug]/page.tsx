@@ -23,6 +23,10 @@ export default async function PresenterDetail({ params }: { params: Promise<{ sl
         <p className="text-xs uppercase tracking-[0.28em] text-gold-400">{presenter.isCustom ? "My Presenter" : "Library"}</p>
         <h1 className="font-display text-5xl">{presenter.name}</h1>
         <p className="text-mist-300">{presenter.bio}</p>
+        <p className="text-sm text-mist-500">
+          In a film, this presenter walks, turns, points, and smiles while talking — the same motion as every other
+          model and every uploaded client photo.
+        </p>
         {presenter.slug === "yuna-han" ? (
           <video
             className="w-full overflow-hidden rounded-3xl"

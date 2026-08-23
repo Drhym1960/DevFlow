@@ -204,7 +204,7 @@ export function AdWizard({
             <label className="glass block cursor-pointer rounded-3xl p-8 text-center">
               <p className="font-display text-xl">Upload your photo</p>
               <p className="mt-2 text-sm text-mist-500">
-                A director who cannot be on set can still be the speaker. We animate your face to the script, with product screens beside you.
+                Upload a client or director photo. They walk, turn, point, and smile while they talk — the same performance as Yuna Han — with product screens beside them.
               </p>
               <input
                 className="mt-4 block w-full text-sm"

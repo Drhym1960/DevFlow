@@ -19,7 +19,7 @@ export default async function CreatePresenterPage({
       <SectionTitle
         kicker="Create My Presenter"
         title={existing ? `Edit ${existing.name}` : "Build a reusable brand ambassador."}
-        copy="Upload your photo and become the speaker, or design a fictional ambassador. A motion model makes that face talk and move like a presenter."
+        copy="Upload a client photo or design a fictional ambassador. They get the same performance as Yuna Han: walking, turning, pointing, and smiling while they talk."
       />
       <CreatePresenterForm
         initial={

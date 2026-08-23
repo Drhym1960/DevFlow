@@ -4,7 +4,7 @@ Choose your presenter. Upload your brand. Let AI create the advertisement.
 
 Create your presenter. Build your brand ambassador. Use them again and again.
 
-DevFlow is a premium AI marketing video studio. A business uploads brand materials, chooses or creates a realistic fictional presenter, and the platform produces a complete advertisement — script, scenes, product placement, captions, branding, music, and a call to action. The presenter is one element of the film, not the product.
+DevFlow is a premium AI marketing video studio. A business uploads brand materials, chooses a library model or uploads a client photo, and the platform produces a complete advertisement — script, scenes, product placement, captions, branding, music, and a call to action. Every presenter performs like the Yuna Han cut: they walk, turn, point, and smile while they talk. The presenter is one element of the film, not the product.
 
 ## Stack
 
@@ -40,6 +40,8 @@ Providers live under `src/lib/ai` and are selected by environment configuration.
 | Translation | Studio translator + LLM when configured | `OPENAI_API_KEY` optional |
 | Voice | OpenAI TTS / ElevenLabs | `OPENAI_API_KEY` or `ELEVENLABS_API_KEY` |
 | Photoreal stills | OpenAI Images | `OPENAI_API_KEY` |
+| Full-body motion | Sora (Yuna flow: walk, turn, gesture, smile) | `OPENAI_API_KEY` — default for every model and every uploaded photo |
+| Face-locked fallback | SadTalker / D-ID / Fal | `MOTION_PROVIDER=sadtalker` or hosted keys |
 | Presenter identity | Studio portrait engine | none |
 | Lip sync | Studio viseme mapper | none |
 | Video | ffmpeg compositor | local `ffmpeg` |

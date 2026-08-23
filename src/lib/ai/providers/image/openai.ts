@@ -22,7 +22,7 @@ export const openaiImageProvider: ImageProvider = {
       body: JSON.stringify({
         model: process.env.OPENAI_IMAGE_MODEL ?? "dall-e-3",
         prompt,
-        size: "1024x1024",
+        size: process.env.OPENAI_IMAGE_SIZE ?? "1024x1792",
       }),
     });
     if (!res.ok) return { imagePath: null, provider: "openai-image-error" };

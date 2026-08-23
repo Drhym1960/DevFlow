@@ -14,7 +14,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       <SectionTitle
         kicker="Presenter Library"
         title="Realistic fictional presenters, not lookalikes."
-        copy="Browse by marketing category. Every face is an original studio identity."
+        copy="Browse by marketing category. Every face is an original studio identity, and every film uses the same free-moving performance."
       />
       <div className="flex flex-wrap gap-2">
         <Link href="/presenters"><Pill active={!category}>All</Pill></Link>

@@ -5,6 +5,7 @@ export type MotionRequest = {
   audioPath: string;
   outPath: string;
   still?: boolean;
+  prompt?: string;
 };
 
 export type MotionProvider = {

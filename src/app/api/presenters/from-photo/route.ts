@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     {
       name: String(form.get("name") || user.name),
       gender: form.get("gender") === "male" ? "male" : "female",
-      appearance: "Photoreal uploaded identity — motion model will animate this face",
+      appearance: "Photoreal uploaded identity — the Yuna-style motion model will animate this person walking, turning, pointing and smiling",
       brandAssociation: String(form.get("brandAssociation") || ""),
     },
     user.id,
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       speakingTone: identity.speakingTone,
       categories: "General Marketing",
       studioStyle: identity.studioStyle,
-      bio: `${identity.name} is a motion-ready presenter created from an uploaded photograph. The same face is animated by the studio motion model across every campaign.`,
+      bio: `${identity.name} is a motion-ready presenter created from an uploaded photograph. The same person walks, turns, points, and smiles while talking — the same performance as every library model.`,
       portraitSeed: identity.seed,
       portraitUrl: rel,
       brandAssociation: identity.brandAssociation,

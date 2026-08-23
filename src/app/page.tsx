@@ -16,6 +16,15 @@ const FEATURED = [
   "jordan-hale",
 ];
 
+const STUDIO = [
+  { href: "/login", title: "Sign in", copy: "Open the studio. Demo: studio@devflow.ai" },
+  { href: "/presenters", title: "Presenter library", copy: "Pick a realistic model by category and region." },
+  { href: "/presenters/create", title: "Upload a photo", copy: "A client or director becomes the speaker." },
+  { href: "/videos/new", title: "Create a film", copy: "Brief, brand, presenter, script, then a full cut." },
+  { href: "/brand-kits", title: "Brand kits", copy: "Colours, product, CTA — reused on every film." },
+  { href: "/assets", title: "Product screens", copy: "Screenshots sit beside the presenter while they move." },
+];
+
 export default async function LandingPage() {
   const all = await db.presenter.findMany({ where: { isCustom: false } });
   const presenters = FEATURED.map((slug) => all.find((p) => p.slug === slug)).filter(Boolean) as typeof all;
@@ -38,40 +47,53 @@ export default async function LandingPage() {
       </header>
 
       <section className="mx-auto max-w-6xl px-6 pb-16 pt-10 md:pt-20">
-        <p className="text-xs uppercase tracking-[0.32em] text-gold-400">AI creative agency, in one platform</p>
+        <p className="text-xs uppercase tracking-[0.32em] text-gold-400">The studio is live</p>
         <h1 className="mt-5 max-w-4xl font-display text-5xl leading-[1.05] tracking-tight md:text-7xl">
           Choose your presenter. Upload your brand. Let AI create the advertisement.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-mist-300">
-          Upload your photo and become the speaker — or choose a realistic model. They walk, turn, point, and smile while
-          they talk, and your product screens sit beside them.
+          Every library model — and every photo a client uploads — performs the same way: they walk, turn, point, and
+          smile while they talk. Product screens stay beside them.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/register">
             <Button>Start a film</Button>
           </Link>
-          <Link href="/presenters">
-            <Button variant="ghost">Browse presenters</Button>
+          <Link href="/login">
+            <Button variant="ghost">Enter the studio</Button>
           </Link>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-16">
-        <p className="text-xs uppercase tracking-[0.32em] text-gold-400">Fashion presenter</p>
-        <h2 className="mt-3 max-w-3xl font-display text-4xl">Yuna Han, standing and moving while she talks fashion.</h2>
+        <p className="text-xs uppercase tracking-[0.32em] text-gold-400">The performance</p>
+        <h2 className="mt-3 max-w-3xl font-display text-4xl">This is how every presenter talks.</h2>
         <p className="mt-4 max-w-2xl text-mist-300">
-          An original Seoul fashion model — not a celebrity lookalike. She walks, turns, points, and smiles on camera
-          while lookbook stills stay beside her.
+          Yuna Han is the reference cut. Pick Amara, upload a client photo, or design a new ambassador — they get the
+          same free movement, not a locked talking head.
         </p>
         <div className="mt-8 overflow-hidden rounded-[32px] bg-ink-950">
           <video
-            className="aspect-[9/16] w-full max-w-md mx-auto"
+            className="mx-auto aspect-[9/16] w-full max-w-md"
             src="/demos/yuna-fashion.mp4"
             poster="/presenters/yuna-han.png"
             controls
             playsInline
             preload="metadata"
           />
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <p className="text-xs uppercase tracking-[0.32em] text-gold-400">Website & studio</p>
+        <h2 className="mt-3 font-display text-4xl">What you can open right now</h2>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {STUDIO.map((item) => (
+            <Link key={item.href} href={item.href} className="glass rounded-3xl p-6">
+              <p className="font-display text-2xl">{item.title}</p>
+              <p className="mt-2 text-sm text-mist-300">{item.copy}</p>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -94,13 +116,13 @@ export default async function LandingPage() {
 
       <section className="mx-auto max-w-6xl px-6 pb-24">
         <div className="glass rounded-[32px] p-8 md:p-14">
-          <p className="text-xs uppercase tracking-[0.28em] text-gold-400">Create My Presenter</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-gold-400">Your photo or our model</p>
           <h2 className="mt-3 max-w-3xl font-display text-4xl md:text-5xl">
-            Create your presenter. Build your brand ambassador. Use them again and again.
+            Same motion. Same film. Use them again and again.
           </h2>
           <p className="mt-5 max-w-2xl text-mist-300">
-            Directors can upload their own photo and stay the speaker. Or pick a realistic model. Either way, they move
-            while they talk, and your product screens stay on camera beside them.
+            Upload a client picture and they become the speaker. Or pick a library model. Either way they move freely
+            while they talk, and the brand stays on camera beside them.
           </p>
           <Link href="/presenters/create" className="mt-8 inline-block">
             <Button>Create My Presenter</Button>

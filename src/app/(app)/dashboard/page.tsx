@@ -18,7 +18,7 @@ export default async function DashboardPage() {
       <SectionTitle
         kicker="Overview"
         title={`Welcome back, ${user.name.split(" ")[0]}.`}
-        copy="Choose a presenter, upload the brand, and let the studio cut a complete advertisement."
+        copy="Pick a model or upload a photo. They walk, turn, and smile while they talk — then the studio cuts the advertisement."
       />
       <div className="flex flex-wrap gap-3">
         <Link href="/videos/new">

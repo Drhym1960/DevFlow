@@ -23,7 +23,7 @@ export default async function NewVideoPage({
       <SectionTitle
         kicker="New advertisement"
         title="The presenter is only one part of the film."
-        copy="Brief, brand, presenter, goal, then original copy and a full scene cut."
+        copy="Brief, brand, then a model or a client photo. They perform like Yuna Han — freely, on their feet — while product screens sit beside them."
       />
       <AdWizard presenters={presenters} kits={kits} presetPresenter={presenter} />
     </div>
