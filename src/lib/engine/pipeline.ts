@@ -2,7 +2,7 @@ import path from "path";
 import { db } from "@/lib/db";
 import { parseJson } from "@/lib/utils";
 import { resolutionFor, getPlan } from "@/lib/plans";
-import { llm, tts, avatars, video, storage } from "@/lib/ai/registry";
+import { llm, tts, avatars, video, storage, motion } from "@/lib/ai/registry";
 import { planScenes } from "./storyboard";
 import type { BrandAnalysis, BrandBrief, ScriptDraft, ScenePlan } from "@/lib/ai/ports";
 import { portraitSvg, traitsFromPresenter } from "@/lib/presenters/portrait";
@@ -68,9 +68,32 @@ export async function runPipeline(jobId: string) {
       tone: project.voiceTone,
     });
 
-    push(logs, "presenter", "Locking presenter identity for this campaign");
-    await updateJob(jobId, { stage: "presenter", progress: 52, logs });
     const presenter = project.presenter;
+    push(logs, "presenter", "Animating the presenter with the motion model");
+    await updateJob(jobId, { stage: "presenter", progress: 52, logs });
+    let talkVideo: string | null = null;
+    const portrait = presenter?.portraitUrl
+      ? presenter.portraitUrl.startsWith("http")
+        ? presenter.portraitUrl
+        : presenter.portraitUrl.startsWith("/presenters/")
+          ? path.join(process.cwd(), "public", presenter.portraitUrl)
+          : presenter.portraitUrl.startsWith("/")
+            ? presenter.portraitUrl
+            : storage().resolve(presenter.portraitUrl)
+      : null;
+    if (portrait && spoken.audioPath) {
+      try {
+        const animated = await motion().animate({
+          sourceImage: portrait,
+          audioPath: spoken.audioPath.startsWith("/") ? spoken.audioPath : storage().resolve(spoken.audioPath),
+          outPath: storage().resolve(`renders/${project.id}/talking.mp4`),
+        });
+        talkVideo = animated.videoPath;
+        push(logs, "presenter", `Motion via ${animated.provider}`);
+      } catch (error) {
+        push(logs, "presenter", error instanceof Error ? error.message : "Motion model unavailable; falling back");
+      }
+    }
     const svg = presenter
       ? portraitSvg(traitsFromPresenter(presenter), 720, presenter.name)
       : (await avatars().identityFrame({ seed: project.id, traits: { gender: "female", skinTone: "Warm tan", hair: "Long dark waves", clothingStyle: "Studio tailoring" } })).svg;
@@ -108,6 +131,7 @@ export async function runPipeline(jobId: string) {
       outDir: storage().resolve("renders"),
       audioPath: spoken.audioPath ? storage().resolve(spoken.audioPath) : null,
       talkFrameDir: process.env.TALK_FRAME_DIR || null,
+      talkVideoPath: talkVideo,
     });
 
     await db.video.create({

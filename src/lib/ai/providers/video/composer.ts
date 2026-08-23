@@ -115,6 +115,39 @@ export const ffmpegComposer: VideoComposer = {
   }),
 
   async render(input) {
+    if (input.talkVideoPath) {
+      const dest = path.join(input.outDir, input.projectId, "ad.mp4");
+      await mkdir(path.dirname(dest), { recursive: true });
+      const overlayDir = input.talkFrameDir;
+      const advisors = overlayDir ? path.join(overlayDir, "mystictxt-advisors.png") : "";
+      try {
+        if (overlayDir) {
+          await run("python3", [path.resolve("scripts/overlay_screens.py"), input.talkVideoPath, overlayDir, dest]);
+        } else {
+          throw new Error("no overlay");
+        }
+      } catch {
+        await run("ffmpeg", [
+          "-y",
+          "-i",
+          input.talkVideoPath,
+          "-vf",
+          `scale=${input.width}:${input.height}:force_original_aspect_ratio=increase,crop=${input.width}:${input.height}`,
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-c:a",
+          "aac",
+          "-movflags",
+          "+faststart",
+          dest,
+        ]);
+      }
+      void advisors;
+      const duration = input.scenes.reduce((s, sc) => s + sc.duration, 0);
+      return { videoPath: dest, duration };
+    }
     if (input.audioPath && input.talkFrameDir) {
       const dest = path.join(input.outDir, input.projectId, "ad.mp4");
       await mkdir(path.dirname(dest), { recursive: true });

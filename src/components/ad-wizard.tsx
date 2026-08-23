@@ -47,7 +47,8 @@ export function AdWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [tab, setTab] = useState<"library" | "mine">("library");
+  const [tab, setTab] = useState<"library" | "mine" | "me">("library");
+  const [selfNote, setSelfNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -193,11 +194,41 @@ export function AdWizard({
 
       {step === 3 && (
         <div className="space-y-4">
-          <div className="flex gap-2">
-            <button onClick={() => setTab("library")}><Pill active={tab === "library"}>Presenter Library</Pill></button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setTab("library")}><Pill active={tab === "library"}>Realistic model</Pill></button>
             <button onClick={() => setTab("mine")}><Pill active={tab === "mine"}>My Presenter</Pill></button>
+            <button onClick={() => setTab("me")}><Pill active={tab === "me"}>I will present</Pill></button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {tab === "me" ? (
+            <label className="glass block cursor-pointer rounded-3xl p-8 text-center">
+              <p className="font-display text-xl">Upload your photo</p>
+              <p className="mt-2 text-sm text-mist-500">
+                A director who cannot be on set can still be the speaker. We animate your face to the script, with product screens beside you.
+              </p>
+              <input
+                className="mt-4 block w-full text-sm"
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const body = new FormData();
+                  body.append("photo", file);
+                  body.append("name", form.business ? `${form.business} director` : "Director");
+                  const res = await fetch("/api/presenters/from-photo", { method: "POST", body });
+                  const data = await res.json();
+                  if (res.ok) {
+                    setForm((f) => ({ ...f, presenterId: data.id }));
+                    setSelfNote(`Motion presenter ready: ${data.name}`);
+                  } else {
+                    setSelfNote(data.error ?? "Upload failed");
+                  }
+                }}
+              />
+              {selfNote ? <p className="mt-3 text-xs text-gold-300">{selfNote}</p> : null}
+            </label>
+          ) : null}
+          {tab !== "me" ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((p) => (
               <button
                 key={p.id}
@@ -213,7 +244,7 @@ export function AdWizard({
                 </div>
               </button>
             ))}
-          </div>
+          </div> : null}
         </div>
       )}
 

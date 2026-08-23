@@ -35,8 +35,8 @@ export default async function LandingPage() {
           Choose your presenter. Upload your brand. Let AI create the advertisement.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-mist-300">
-          This is not an avatar generator. DevFlow writes the script, places your product, moves the presenter through
-          scenes, and finishes on a professional call to action.
+          Upload your photo and become the speaker — or choose a realistic model. A motion model makes them talk and move
+          like a presenter, while your product screens sit beside them.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/register">
@@ -72,8 +72,8 @@ export default async function LandingPage() {
             Create your presenter. Build your brand ambassador. Use them again and again.
           </h2>
           <p className="mt-5 max-w-2xl text-mist-300">
-            Design a fictional spokesperson — face, voice, accent, language, clothing, studio — and keep them visually
-            consistent across every future campaign.
+            Directors can upload their own photo and stay the speaker. Or pick a realistic model. Either way, they move
+            while they talk, and your product screens stay on camera beside them.
           </p>
           <Link href="/presenters/create" className="mt-8 inline-block">
             <Button>Create My Presenter</Button>

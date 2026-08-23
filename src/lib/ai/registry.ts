@@ -10,6 +10,7 @@ import { studioLipSync } from "./providers/lipsync/studio";
 import { ffmpegComposer } from "./providers/video/composer";
 import { localStorageProvider } from "./providers/storage/local";
 import { studioPayments } from "./providers/payments/studio";
+import { motion, motionRoster } from "./providers/motion";
 
 export function llm() {
   return process.env.OPENAI_API_KEY ? openaiLlmProvider : studioCopyProvider;
@@ -47,6 +48,8 @@ export function payments() {
   return studioPayments;
 }
 
+export { motion };
+
 export function providerRoster(): ProviderStatus[] {
   return [
     openaiLlmProvider.status(),
@@ -60,5 +63,6 @@ export function providerRoster(): ProviderStatus[] {
     ffmpegComposer.status(),
     localStorageProvider.status(),
     studioPayments.status(),
+    ...motionRoster(),
   ];
 }

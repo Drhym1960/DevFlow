@@ -44,6 +44,8 @@ export function CreatePresenterForm({
     brandAssociation: initial?.brandAssociation ?? "",
   });
   const [error, setError] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   const preview = useMemo(
     () =>
@@ -65,6 +67,22 @@ export function CreatePresenterForm({
 
   async function save() {
     setError("");
+    if (photo) {
+      const body = new FormData();
+      body.append("photo", photo);
+      body.append("name", form.name);
+      body.append("gender", form.gender);
+      body.append("brandAssociation", form.brandAssociation);
+      const res = await fetch("/api/presenters/from-photo", { method: "POST", body });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not create a motion presenter from that photo.");
+        return;
+      }
+      router.push(`/presenters/${data.slug}`);
+      router.refresh();
+      return;
+    }
     const res = await fetch(initial?.id ? `/api/presenters/${initial.id}` : "/api/presenters", {
       method: initial?.id ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
@@ -86,8 +104,10 @@ export function CreatePresenterForm({
     <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
       <div className="glass overflow-hidden rounded-[28px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={preview} alt="" className="aspect-[4/5] w-full object-cover" />
-        <p className="p-4 text-sm text-mist-300">Identity stays locked to this configuration so future films match.</p>
+        <img src={photoPreview || preview} alt="" className="aspect-[4/5] w-full object-cover" />
+        <p className="p-4 text-sm text-mist-300">
+          Upload a real photo to become the speaker, or design a fictional ambassador. The motion model animates that face.
+        </p>
       </div>
       <form
         className="grid gap-4 md:grid-cols-2"
@@ -96,6 +116,20 @@ export function CreatePresenterForm({
           void save();
         }}
       >
+        <label className="md:col-span-2 block space-y-2">
+          <span className="text-xs uppercase tracking-[0.18em] text-mist-500">Upload my photo (I will present)</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="w-full text-sm text-mist-300"
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              setPhoto(file);
+              setPhotoPreview(file ? URL.createObjectURL(file) : null);
+            }}
+          />
+          <span className="block text-xs text-mist-500">A clear, front-facing photo. The motion model makes this face talk and move.</span>
+        </label>
         <Field label="Presenter name" value={form.name} onChange={(e) => set("name", e.target.value)} required />
         <Select label="Gender" value={form.gender} onChange={(e) => set("gender", e.target.value)}>
           <option value="female">Female</option>

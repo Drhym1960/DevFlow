@@ -136,6 +136,7 @@ export type RenderInput = {
   outDir: string;
   audioPath?: string | null;
   talkFrameDir?: string | null;
+  talkVideoPath?: string | null;
 };
 
 export type StorageProvider = {
