@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  company      String?
+  plan         String   @default("starter")
+  videosUsed   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  presenters Presenter[]
+  brandKits  BrandKit[]
+  assets     Asset[]
+  projects   Project[]
+  sessions   Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Presenter {
+  id               String   @id @default(cuid())
+  ownerId          String?
+  isCustom         Boolean  @default(false)
+  name             String
+  slug             String   @unique
+  gender           String
+  ageRange         String
+  region           String
+  skinTone         String
+  hair             String
+  bodyType         String
+  clothingStyle    String
+  professionalStyle String
+  personality      String
+  voiceId          String
+  accent           String
+  languages        String
+  speakingTone     String
+  categories       String
+  studioStyle      String
+  bio              String
+  portraitSeed     String
+  portraitUrl      String?
+  brandAssociation String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  owner          User?           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  preferredBy    BrandKit[]
+  projects       Project[]
+  sourceOfDupes  Presenter[]     @relation("PresenterDuplicates")
+  duplicatedFrom Presenter?      @relation("PresenterDuplicates", fields: [duplicatedFromId], references: [id])
+  duplicatedFromId String?
+}
+
+model BrandKit {
+  id                   String   @id @default(cuid())
+  userId               String
+  name                 String
+  businessName         String
+  productInfo          String
+  website              String?
+  colors               String
+  fonts                String
+  defaultCta           String
+  preferredVoice       String?
+  preferredStyle       String?
+  preferredPresenterId String?
+  logoAssetId          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  preferredPresenter Presenter? @relation(fields: [preferredPresenterId], references: [id])
+  projects           Project[]
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  filename  String
+  path      String
+  mime      String
+  label     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  status      String   @default("draft")
+  format      String   @default("landscape")
+  goal        String?
+  brief       String
+  analysis    String?
+  script      String?
+  scenes      String?
+  captions    String?
+  music       String   @default("cinematic-warm")
+  cta         String?
+  language    String   @default("en")
+  voiceTone   String   @default("professional")
+  speechRate  Float    @default(1)
+  brandKitId  String?
+  presenterId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brandKit  BrandKit?  @relation(fields: [brandKitId], references: [id])
+  presenter Presenter? @relation(fields: [presenterId], references: [id])
+  videos    Video[]
+  jobs      Job[]
+}
+
+model Video {
+  id        String   @id @default(cuid())
+  projectId String
+  format    String
+  width     Int
+  height    Int
+  path      String
+  duration  Float    @default(0)
+  status    String   @default("ready")
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String
+  status    String   @default("queued")
+  stage     String   @default("queued")
+  progress  Int      @default(0)
+  logs      String   @default("[]")
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Template {
+  id          String @id @default(cuid())
+  name        String
+  category    String
+  goal        String
+  description String
+  format      String
+  scenePlan   String
+}
