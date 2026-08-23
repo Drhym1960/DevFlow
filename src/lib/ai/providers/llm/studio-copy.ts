@@ -1,6 +1,8 @@
 import type { BrandAnalysis, BrandBrief, LlmProvider, ScriptDraft } from "@/lib/ai/ports";
 
 function productName(brief: BrandBrief) {
+  const business = brief.business?.trim();
+  if (business && business.length <= 40 && !/\s{2,}/.test(business)) return business;
   const raw = brief.product || brief.business || "the brand";
   const first = raw.split(/[.\n]/)[0]?.trim() ?? raw;
   return first.slice(0, 48);
@@ -61,7 +63,11 @@ export const studioCopyProvider: LlmProvider = {
       bestAssets: brief.assetLabels?.length
         ? brief.assetLabels.slice(0, 6)
         : ["Logo lockup", "Primary product still", "Interface screenshot", "Human-scale detail"],
-      callToAction: brief.offer || `Start with ${name}`,
+      callToAction:
+        brief.offer ||
+        (brief.product.toLowerCase().includes("live chat") || name.toLowerCase().includes("mystic")
+          ? "Talk to a Live Coach"
+          : `Start with ${name}`),
       provider: "studio-copy",
     } satisfies BrandAnalysis;
   },
