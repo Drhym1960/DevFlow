@@ -38,7 +38,7 @@ Providers live under `src/lib/ai` and are selected by environment configuration.
 | --- | --- | --- |
 | Script / analysis | Studio Copy Engine (always on) or OpenAI-compatible LLM | `OPENAI_API_KEY` optional |
 | Translation | Studio translator + LLM when configured | `OPENAI_API_KEY` optional |
-| Voice | OpenAI TTS / ElevenLabs (male presenters get a bold male voice) | `OPENAI_API_KEY` or `ELEVENLABS_API_KEY` |
+| Voice | OpenAI TTS / ElevenLabs studio catalog (client picks the voice) | `OPENAI_API_KEY` or `ELEVENLABS_API_KEY` |
 | Photoreal stills | OpenAI Images | `OPENAI_API_KEY` |
 | Full-body motion | Sora (Yuna flow: walk, turn, gesture, smile) | `OPENAI_API_KEY` — default for every model and every uploaded photo |
 | Face-locked fallback | SadTalker / D-ID / Fal | `MOTION_PROVIDER=sadtalker` or hosted keys |
@@ -53,7 +53,7 @@ Missing vendor keys never invent a completed third-party generation. The Account
 
 - Presenter Library by marketing category and region
 - Create My Presenter + My Presenters
-- Advertisement wizard (brief → assets → presenter → goal → analysis → script review)
+- Advertisement wizard: write an idea **or** pick a model and a voice, then script and render
 - Scene editor
 - Brand kits, assets, templates, billing
 - Render progress: Analyzing Brand → Writing Script → Creating Voice → Generating Presenter → Building Scenes → Adding Branding → Rendering Video

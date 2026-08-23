@@ -8,6 +8,8 @@ import type { BrandAnalysis, BrandBrief, ScriptDraft, ScenePlan } from "@/lib/ai
 import { portraitSvg, traitsFromPresenter } from "@/lib/presenters/portrait";
 import { motionPromptFor, stillPromptFor } from "@/lib/presenters/motion-prompt";
 import { sadTalkerMotion } from "@/lib/ai/providers/motion/sadtalker";
+import { defaultVoiceId } from "@/lib/ai/providers/tts/voices";
+import { saveGeneratedImage } from "@/lib/studio/save-image";
 
 export type JobLog = { at: string; stage: string; message: string };
 
@@ -62,9 +64,10 @@ export async function runPipeline(jobId: string) {
 
     push(logs, "voice", "Creating voice timeline and visemes");
     await updateJob(jobId, { stage: "voice", progress: 38, logs });
+    const voiceId = brief.voiceId || project.presenter?.voiceId || defaultVoiceId(project.presenter?.gender);
     const spoken = await tts().synthesize({
       text: script.voiceover,
-      voiceId: project.presenter?.voiceId ?? "studio",
+      voiceId,
       language: project.language,
       rate: project.speechRate,
       tone: project.voiceTone,
@@ -121,7 +124,7 @@ export async function runPipeline(jobId: string) {
     await updateJob(jobId, { stage: "scenes", progress: 66, logs });
     const scenes =
       parseJson<ScenePlan[] | null>(project.scenes, null) ??
-      planScenes(script, brief.assetLabels?.length ?? 0, presenter?.studioStyle ?? "Premium dark studio");
+      planScenes(script, (brief.assetPaths?.length || brief.assetLabels?.length) ?? 0, presenter?.studioStyle ?? "Premium dark studio");
     await db.project.update({
       where: { id: project.id },
       data: { scenes: JSON.stringify(scenes), captions: script.captions, cta: script.cta },
@@ -135,6 +138,7 @@ export async function runPipeline(jobId: string) {
     await updateJob(jobId, { stage: "rendering", progress: 88, logs });
     const plan = getPlan(project.user.plan);
     const dims = resolutionFor(project.format, plan.maxHeight);
+    const assetPaths = await resolveProductStills(brief, project.id, logs);
     const out = await video().render({
       projectId: project.id,
       format: project.format,
@@ -146,7 +150,7 @@ export async function runPipeline(jobId: string) {
       cta: script.cta,
       presenterSvg: svg,
       music: project.music,
-      assetPaths: [],
+      assetPaths,
       outDir: storage().resolve("renders"),
       audioPath: spoken.audioPath ? storage().resolve(spoken.audioPath) : null,
       talkFrameDir: process.env.TALK_FRAME_DIR || null,
@@ -202,6 +206,19 @@ async function lockMouthToVoice(talkVideo: string, audioPath: string, projectId:
     push(logs, "presenter", syncError instanceof Error ? syncError.message : "Lip-sync skipped");
   }
   return talkVideo;
+}
+
+async function resolveProductStills(brief: BrandBrief, projectId: string, logs: JobLog[]) {
+  const existing = (brief.assetPaths ?? []).map((p) => (p.startsWith("/") ? p : storage().resolve(p)));
+  if (existing.length) return existing;
+  push(logs, "branding", "Generating product pictures from the idea");
+  const still = await saveGeneratedImage(
+    `Photoreal product still for an advertisement of ${brief.product || brief.business}. Premium lighting, no celebrity, no readable labels.`,
+    `renders/${projectId}/product-still.png`,
+  );
+  if (!still) return [];
+  const full = still.startsWith("/") ? still : storage().resolve(still);
+  return [full];
 }
 
 function existingStillPath(portraitUrl: string | null) {

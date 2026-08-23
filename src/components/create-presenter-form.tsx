@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ACCENTS, LANGUAGES, STUDIO_STYLES, TONES } from "@/lib/constants";
+import { defaultVoiceId, studioVoiceForPresenter } from "@/lib/ai/providers/tts/voices";
 import { portraitDataUri } from "@/lib/presenters/portrait";
 import { Area, Button, Field, Select } from "./ui";
+import { VoicePicker } from "./voice-picker";
 
 const SKIN = [
   "Deep mahogany",
@@ -36,7 +38,7 @@ export function CreatePresenterForm({
     clothingStyle: initial?.clothingStyle ?? "Tailored studio look",
     professionalStyle: initial?.professionalStyle ?? "Brand ambassador",
     personality: initial?.personality ?? "Composed, memorable, commercially clear",
-    voiceId: initial?.voiceId ?? "",
+    voiceId: initial?.voiceId ? studioVoiceForPresenter(initial.voiceId, initial.gender).id : defaultVoiceId(initial?.gender ?? "female"),
     accent: initial?.accent ?? "Neutral",
     languages: initial?.languages ?? "en",
     speakingTone: initial?.speakingTone ?? "Professional",
@@ -72,6 +74,7 @@ export function CreatePresenterForm({
       body.append("photo", photo);
       body.append("name", form.name);
       body.append("gender", form.gender);
+      body.append("voiceId", form.voiceId);
       body.append("brandAssociation", form.brandAssociation);
       const res = await fetch("/api/presenters/from-photo", { method: "POST", body });
       const data = await res.json();
@@ -131,7 +134,10 @@ export function CreatePresenterForm({
           <span className="block text-xs text-mist-500">A clear, front-facing photo. The motion model makes this face talk and move.</span>
         </label>
         <Field label="Presenter name" value={form.name} onChange={(e) => set("name", e.target.value)} required />
-        <Select label="Gender" value={form.gender} onChange={(e) => set("gender", e.target.value)}>
+        <Select label="Gender" value={form.gender} onChange={(e) => {
+          const gender = e.target.value;
+          setForm((f) => ({ ...f, gender, voiceId: defaultVoiceId(gender) }));
+        }}>
           <option value="female">Female</option>
           <option value="male">Male</option>
         </Select>
@@ -163,7 +169,7 @@ export function CreatePresenterForm({
             </option>
           ))}
         </Select>
-        <Field label="Voice id" value={form.voiceId} onChange={(e) => set("voiceId", e.target.value)} hint="Mapped to the active TTS provider" />
+        <VoicePicker value={form.voiceId} gender={form.gender} allowAny={false} onChange={(voiceId) => set("voiceId", voiceId)} />
         <Select label="Studio / background" value={form.studioStyle} onChange={(e) => set("studioStyle", e.target.value)}>
           {STUDIO_STYLES.map((s) => (
             <option key={s}>{s}</option>

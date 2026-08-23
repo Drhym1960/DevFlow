@@ -61,16 +61,21 @@ export function stillPromptFor(identity: MotionIdentity = {}, directorPrompt?: s
 
 export function inferPresenterFromPrompt(prompt: string) {
   const text = prompt.toLowerCase();
-  const male = /\b(guy|man|male|gentleman|he|him|his)\b/.test(text);
-  const female = /\b(woman|female|girl|she|her|lady)\b/.test(text);
-  const gender: "female" | "male" = male && !female ? "male" : "female";
+  const male = /\b(guy|man|male|gentleman|he|him|his|handsome|brother|king|businessman|sir|mr\.?|father|dad|boy|lad|clean.?cut)\b/.test(
+    text,
+  );
+  const female = /\b(woman|female|girl|she|her|lady|sister|queen|mrs\.?|ms\.?|miss|mother|mom|actress|beautiful woman)\b/.test(
+    text,
+  );
+  const gender: "female" | "male" | "unknown" = male && !female ? "male" : female && !male ? "female" : male && female ? "male" : "unknown";
+  const resolved = gender === "unknown" ? "female" : gender;
   const dark = /\b(dark|black|african|deep mahogany|deep brown)\b/.test(text);
   const whiteSuit = /white suit/.test(text);
   return {
     gender,
-    skinTone: dark ? "Deep mahogany" : gender === "male" ? "Medium bronze" : "Warm tan",
-    hair: /\bclean.?cut\b/.test(text) ? "Clean-cut fade" : gender === "male" ? "Close cropped" : "Long dark waves",
-    clothingStyle: whiteSuit ? "Tailored white suit, open collar" : gender === "male" ? "Navy suit, open collar" : "Tailored studio look",
+    skinTone: dark ? "Deep mahogany" : resolved === "male" ? "Medium bronze" : "Warm tan",
+    hair: /\bclean.?cut\b/.test(text) ? "Clean-cut fade" : resolved === "male" ? "Close cropped" : "Long dark waves",
+    clothingStyle: whiteSuit ? "Tailored white suit, open collar" : resolved === "male" ? "Navy suit, open collar" : "Tailored studio look",
     professionalStyle: /\badvice|advisor|professional\b/.test(text) ? "Professional advisor" : "Brand ambassador",
     speakingTone: /\bprofessional|advice\b/.test(text) ? "Professional" : "Warm",
     studioStyle: /\bdark|gold|premium\b/.test(text) ? "Premium dark studio" : "Editorial fashion set",

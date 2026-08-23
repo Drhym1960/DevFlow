@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { canCreatePresenter, getPlan } from "@/lib/plans";
 import { completeIdentity } from "@/lib/presenters/identity";
 import { storage } from "@/lib/ai/registry";
+import { defaultVoiceId } from "@/lib/ai/providers/tts/voices";
 
 export async function POST(req: Request) {
   const user = await getUser();
@@ -23,10 +24,19 @@ export async function POST(req: Request) {
   const rel = `presenters/${user.id}/${Date.now()}-${photo.name.replace(/[^\w.\-]+/g, "_")}`;
   await storage().save(rel, bytes, photo.type || "image/jpeg");
 
+  const gender = form.get("gender") === "male" ? "male" : form.get("gender") === "female" ? "female" : null;
+  if (!gender) {
+    return NextResponse.json(
+      { error: "Choose male or female so the studio voice matches the person in the photo." },
+      { status: 400 },
+    );
+  }
+  const voiceId = String(form.get("voiceId") || "").trim() || defaultVoiceId(gender);
   const identity = completeIdentity(
     {
       name: String(form.get("name") || user.name),
-      gender: form.get("gender") === "male" ? "male" : "female",
+      gender,
+      voiceId,
       appearance: "Photoreal uploaded identity — the Yuna-style motion model will animate this person walking, turning, pointing and smiling",
       brandAssociation: String(form.get("brandAssociation") || ""),
     },
@@ -48,7 +58,7 @@ export async function POST(req: Request) {
       clothingStyle: identity.clothingStyle,
       professionalStyle: "Director / on-camera presenter",
       personality: identity.personality,
-      voiceId: identity.voiceId,
+      voiceId,
       accent: identity.accent,
       languages: identity.languages.join(","),
       speakingTone: identity.speakingTone,

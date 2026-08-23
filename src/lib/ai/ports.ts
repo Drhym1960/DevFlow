@@ -17,6 +17,9 @@ export type BrandBrief = {
   assetLabels?: string[];
   directorPrompt?: string;
   durationSeconds?: number;
+  idea?: string;
+  voiceId?: string;
+  assetPaths?: string[];
 };
 
 export type BrandAnalysis = {

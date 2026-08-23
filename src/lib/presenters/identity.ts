@@ -1,4 +1,5 @@
 import { STUDIO_STYLES, TONES } from "@/lib/constants";
+import { defaultVoiceId } from "@/lib/ai/providers/tts/voices";
 import { uniqueSlug } from "@/lib/utils";
 
 export type PresenterDraft = {
@@ -36,7 +37,7 @@ export function completeIdentity(draft: Partial<PresenterDraft>, ownerKey: strin
     clothingStyle: draft.clothingStyle || "Tailored studio look",
     professionalStyle: draft.professionalStyle || "Brand ambassador",
     personality,
-    voiceId: draft.voiceId || `${name.split(" ")[0].toLowerCase()}-${tone.toLowerCase()}`,
+    voiceId: draft.voiceId || defaultVoiceId(gender),
     accent: draft.accent || "Neutral",
     languages: draft.languages?.length ? draft.languages : ["en"],
     speakingTone: tone,

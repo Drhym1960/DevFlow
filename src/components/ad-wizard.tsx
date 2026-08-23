@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FORMATS, GOALS, LANGUAGES, MUSIC_BEDS, TONES } from "@/lib/constants";
+import { defaultVoiceId, studioVoiceForPresenter } from "@/lib/ai/providers/tts/voices";
 import { portraitSrc } from "@/lib/presenters/portrait";
 import { Area, Button, Field, Pill, Select } from "./ui";
+import { VoicePicker } from "./voice-picker";
 
 type Presenter = {
   id: string;
@@ -47,20 +49,26 @@ export function AdWizard({
   presetPresenter?: string;
 }) {
   const router = useRouter();
+  const initialPresenter = presenters.find((p) => p.id === presetPresenter) ?? presenters[0];
   const [step, setStep] = useState(1);
+  const [start, setStart] = useState<"idea" | "details">(presetPresenter ? "details" : "idea");
   const [tab, setTab] = useState<"library" | "mine" | "me" | "describe">("library");
   const [selfNote, setSelfNote] = useState("");
+  const [photoGender, setPhotoGender] = useState<"male" | "female" | "">("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [script, setScript] = useState<Script | null>(null);
+  const [localPresenters, setLocalPresenters] = useState(presenters);
   const [form, setForm] = useState({
+    idea: "",
     business: "",
     product: "",
     website: "",
     extra: "",
     colors: "#0c0c14, #d4a853, #f4f1ea",
-    presenterId: presetPresenter ?? presenters[0]?.id ?? "",
+    presenterId: initialPresenter?.id ?? "",
+    voiceId: studioVoiceForPresenter(initialPresenter?.voiceId, initialPresenter?.gender).id,
     goal: "app-promo",
     format: "vertical",
     language: "en",
@@ -71,12 +79,20 @@ export function AdWizard({
     durationSeconds: "12",
   });
 
-  const selected = presenters.find((p) => p.id === form.presenterId);
-  const visible = presenters.filter((p) => (tab === "mine" ? p.isCustom : !p.isCustom));
+  const selected = localPresenters.find((p) => p.id === form.presenterId);
+  const visible = localPresenters.filter((p) => (tab === "mine" ? p.isCustom : !p.isCustom));
+
+  function choosePresenter(p: Presenter) {
+    setForm((f) => ({
+      ...f,
+      presenterId: p.id,
+      voiceId: studioVoiceForPresenter(p.voiceId, p.gender).id,
+    }));
+  }
 
   async function persist(status = "draft") {
     const payload = {
-      title: form.business || "Untitled film",
+      title: form.business || form.idea.slice(0, 48) || "Untitled film",
       status,
       format: form.format,
       goal: form.goal,
@@ -87,12 +103,14 @@ export function AdWizard({
       brandKitId: form.brandKitId || null,
       brief: {
         business: form.business,
-        product: form.product,
+        product: form.product || form.idea,
         website: form.website,
-        extra: form.extra,
+        extra: form.extra || form.idea,
+        idea: form.idea,
         colors: form.colors.split(",").map((s) => s.trim()),
         directorPrompt: form.directorPrompt,
         durationSeconds: Number(form.durationSeconds) || undefined,
+        voiceId: form.voiceId,
       },
     };
     const res = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", {
@@ -104,6 +122,48 @@ export function AdWizard({
     if (!res.ok) throw new Error(data.error ?? "Could not save");
     setProjectId(data.id);
     return data.id as string;
+  }
+
+  async function fromIdea(render: boolean) {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/studio/from-idea", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: form.idea, voiceId: form.voiceId, render }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "The studio could not take that idea.");
+      if (data.presenter && !localPresenters.some((p) => p.id === data.presenter.id)) {
+        setLocalPresenters((list) => [data.presenter, ...list]);
+      }
+      setProjectId(data.projectId);
+      setForm((f) => ({
+        ...f,
+        business: data.film.business,
+        product: data.film.product,
+        extra: data.film.extra,
+        presenterId: data.presenter.id,
+        voiceId: data.film.voiceId,
+        goal: data.film.goal,
+        format: data.film.format,
+        tone: data.film.tone,
+        music: data.film.music,
+        directorPrompt: data.film.directorPrompt,
+        durationSeconds: String(data.film.durationSeconds),
+      }));
+      if (data.script) setScript(data.script);
+      if (render) {
+        router.push(`/videos/${data.projectId}`);
+        return;
+      }
+      setStep(6);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The studio could not take that idea.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function analyze() {
@@ -137,19 +197,23 @@ export function AdWizard({
   }
 
   async function render() {
-    if (!projectId || !script) return;
+    if (!script) return;
     setBusy(true);
-    await fetch(`/api/projects/${projectId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ script, status: "composing" }),
-    });
-    const res = await fetch(`/api/projects/${projectId}/render`, { method: "POST" });
-    setBusy(false);
-    if (res.ok) router.push(`/videos/${projectId}`);
+    try {
+      const id = await persist("composing");
+      await fetch(`/api/projects/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script, status: "composing" }),
+      });
+      const res = await fetch(`/api/projects/${id}/render`, { method: "POST" });
+      if (res.ok) router.push(`/videos/${id}`);
+    } finally {
+      setBusy(false);
+    }
   }
 
-  const steps = ["Brief", "Brand", "Presenter", "Goal", "Understand", "Script"];
+  const steps = ["Idea", "Brand", "Presenter", "Goal", "Understand", "Script"];
 
   return (
     <div className="space-y-8">
@@ -165,52 +229,117 @@ export function AdWizard({
 
       {step === 1 && (
         <div className="grid gap-4">
-          <Field label="Business name" value={form.business} onChange={(e) => setForm({ ...form, business: e.target.value })} />
-          <Area label="What are you advertising?" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} />
-          <Field label="Website URL" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} hint="Fetched when technically reachable" />
-          <Area label="Campaign notes" value={form.extra} onChange={(e) => setForm({ ...form, extra: e.target.value })} />
-          {kits.length ? (
-            <Select label="Or start from a Brand Kit" value={form.brandKitId} onChange={(e) => {
-              const kit = kits.find((k) => k.id === e.target.value);
-              setForm({
-                ...form,
-                brandKitId: e.target.value,
-                business: kit?.businessName || form.business,
-                product: kit?.productInfo || form.product,
-                website: kit?.website || form.website,
-              });
-            }}>
-              <option value="">None</option>
-              {kits.map((k) => (
-                <option key={k.id} value={k.id}>{k.name}</option>
-              ))}
-            </Select>
-          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setStart("idea")}>
+              <Pill active={start === "idea"}>I have an idea</Pill>
+            </button>
+            <button onClick={() => setStart("details")}>
+              <Pill active={start === "details"}>I will fill in the details</Pill>
+            </button>
+          </div>
+          {start === "idea" ? (
+            <div className="glass space-y-4 rounded-3xl p-6">
+              <p className="font-display text-2xl">Write anything. The studio will make the film.</p>
+              <p className="text-sm leading-7 text-mist-300">
+                A product, a person, a feeling, a length — even a messy sentence. The studio picks or generates the
+                model, draws the pictures, chooses a matching voice unless you pick one, writes the script, and renders.
+              </p>
+              <Area
+                label="Your idea"
+                value={form.idea}
+                onChange={(e) => setForm({ ...form, idea: e.target.value })}
+                placeholder="Private advice app, handsome American man in a white suit, bold male voice, 30 seconds"
+              />
+              <VoicePicker value={form.voiceId} onChange={(voiceId) => setForm({ ...form, voiceId })} />
+              <div className="flex flex-wrap gap-3">
+                <Button disabled={busy || form.idea.trim().length < 8} onClick={() => void fromIdea(true)}>
+                  {busy ? "Making the film…" : "Make the film"}
+                </Button>
+                <Button variant="ghost" disabled={busy || form.idea.trim().length < 8} onClick={() => void fromIdea(false)}>
+                  Review the script first
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Field label="Business name" value={form.business} onChange={(e) => setForm({ ...form, business: e.target.value })} />
+              <Area label="What are you advertising?" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} />
+              <Field label="Website URL" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} hint="Fetched when technically reachable" />
+              <Area label="Campaign notes" value={form.extra} onChange={(e) => setForm({ ...form, extra: e.target.value })} />
+              {kits.length ? (
+                <Select
+                  label="Or start from a Brand Kit"
+                  value={form.brandKitId}
+                  onChange={(e) => {
+                    const kit = kits.find((k) => k.id === e.target.value);
+                    setForm({
+                      ...form,
+                      brandKitId: e.target.value,
+                      business: kit?.businessName || form.business,
+                      product: kit?.productInfo || form.product,
+                      website: kit?.website || form.website,
+                    });
+                  }}
+                >
+                  <option value="">None</option>
+                  {kits.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.name}
+                    </option>
+                  ))}
+                </Select>
+              ) : null}
+            </>
+          )}
         </div>
       )}
 
       {step === 2 && (
         <div className="space-y-4">
-          <p className="text-sm text-mist-300">Upload logos, product photos, screenshots and brand colours. These become scenes — not decorations.</p>
+          <p className="text-sm text-mist-300">Upload logos, product photos, screenshots and brand colours. If you skip this, the studio will draw product pictures from the idea.</p>
           <Field label="Brand colours" value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} />
-          <UploadBox projectHint={form.business} />
+          <UploadBox projectHint={form.business || form.idea} />
         </div>
       )}
 
       {step === 3 && (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => setTab("library")}><Pill active={tab === "library"}>Realistic model</Pill></button>
-            <button onClick={() => setTab("mine")}><Pill active={tab === "mine"}>My Presenter</Pill></button>
-            <button onClick={() => setTab("me")}><Pill active={tab === "me"}>I will present</Pill></button>
-            <button onClick={() => setTab("describe")}><Pill active={tab === "describe"}>Describe a model</Pill></button>
+            <button onClick={() => setTab("library")}>
+              <Pill active={tab === "library"}>Realistic model</Pill>
+            </button>
+            <button onClick={() => setTab("mine")}>
+              <Pill active={tab === "mine"}>My Presenter</Pill>
+            </button>
+            <button onClick={() => setTab("me")}>
+              <Pill active={tab === "me"}>I will present</Pill>
+            </button>
+            <button onClick={() => setTab("describe")}>
+              <Pill active={tab === "describe"}>Describe a model</Pill>
+            </button>
           </div>
+          <VoicePicker
+            value={form.voiceId}
+            gender={selected?.gender || photoGender || undefined}
+            onChange={(voiceId) => setForm({ ...form, voiceId })}
+          />
           {tab === "me" ? (
             <label className="glass block cursor-pointer rounded-3xl p-8 text-center">
               <p className="font-display text-xl">Upload your photo</p>
               <p className="mt-2 text-sm text-mist-500">
-                Upload a client or director photo. They walk, turn, point, and smile while they talk — the same performance as Yuna Han — with product screens beside them.
+                Choose gender and voice first so this person is never given the wrong voice. Then they walk, turn, and talk.
               </p>
+              <div className="mt-4 grid gap-3 text-left md:grid-cols-2">
+                <Select label="Gender of the person in the photo" value={photoGender} onChange={(e) => {
+                  const gender = e.target.value as "male" | "female" | "";
+                  setPhotoGender(gender);
+                  if (gender) setForm((f) => ({ ...f, voiceId: defaultVoiceId(gender) }));
+                }}>
+                  <option value="">Choose male or female</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </Select>
+              </div>
               <input
                 className="mt-4 block w-full text-sm"
                 type="file"
@@ -218,13 +347,20 @@ export function AdWizard({
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  if (!photoGender) {
+                    setSelfNote("Choose male or female first so the voice matches.");
+                    return;
+                  }
                   const body = new FormData();
                   body.append("photo", file);
                   body.append("name", form.business ? `${form.business} director` : "Director");
+                  body.append("gender", photoGender);
+                  body.append("voiceId", form.voiceId);
                   const res = await fetch("/api/presenters/from-photo", { method: "POST", body });
                   const data = await res.json();
                   if (res.ok) {
-                    setForm((f) => ({ ...f, presenterId: data.id }));
+                    setLocalPresenters((list) => [data, ...list]);
+                    choosePresenter(data);
                     setSelfNote(`Motion presenter ready: ${data.name}`);
                   } else {
                     setSelfNote(data.error ?? "Upload failed");
@@ -238,8 +374,7 @@ export function AdWizard({
             <div className="glass space-y-4 rounded-3xl p-6">
               <p className="font-display text-xl">Write how they look and how they should move.</p>
               <p className="text-sm text-mist-500">
-                Yuna-level realism stays the default. Your prompt decides the person, wardrobe, and behaviour — walk,
-                turn, advice, energy, stillness.
+                The studio generates the portrait from your description, then performs it. Pick the voice they should speak in.
               </p>
               <Area
                 label="Director prompt"
@@ -253,12 +388,17 @@ export function AdWizard({
                   const res = await fetch("/api/presenters/from-prompt", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt: form.directorPrompt, name: form.business ? `${form.business} host` : "" }),
+                    body: JSON.stringify({
+                      prompt: form.directorPrompt,
+                      name: form.business ? `${form.business} host` : "",
+                      voiceId: form.voiceId,
+                    }),
                   });
                   const data = await res.json();
                   setBusy(false);
                   if (res.ok) {
-                    setForm((f) => ({ ...f, presenterId: data.id }));
+                    setLocalPresenters((list) => [data, ...list]);
+                    setForm((f) => ({ ...f, presenterId: data.id, voiceId: data.voiceId || f.voiceId }));
                     setSelfNote(`Model ready: ${data.name}`);
                   } else {
                     setSelfNote(data.error ?? "Could not create that model");
@@ -270,23 +410,27 @@ export function AdWizard({
               {selfNote ? <p className="text-xs text-gold-300">{selfNote}</p> : null}
             </div>
           ) : null}
-          {tab !== "me" && tab !== "describe" ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {visible.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setForm({ ...form, presenterId: p.id })}
-                className={`glass overflow-hidden rounded-3xl text-left ${form.presenterId === p.id ? "ring-2 ring-gold-400" : ""}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={portraitSrc(p)} alt={p.name} className="aspect-[4/5] w-full object-cover" />
-                <div className="space-y-1 p-4">
-                  <p className="font-display text-xl">{p.name}</p>
-                  <p className="text-xs text-mist-500">{p.voiceId} · {p.languages} · {p.speakingTone}</p>
-                  <p className="text-xs text-gold-300">Short demo: {p.professionalStyle}</p>
-                </div>
-              </button>
-            ))}
-          </div> : null}
+          {tab !== "me" && tab !== "describe" ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {visible.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => choosePresenter(p)}
+                  className={`glass overflow-hidden rounded-3xl text-left ${form.presenterId === p.id ? "ring-2 ring-gold-400" : ""}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={portraitSrc(p)} alt={p.name} className="aspect-[4/5] w-full object-cover" />
+                  <div className="space-y-1 p-4">
+                    <p className="font-display text-xl">{p.name}</p>
+                    <p className="text-xs text-mist-500">
+                      {studioVoiceForPresenter(p.voiceId, p.gender).label} · {p.languages} · {p.speakingTone}
+                    </p>
+                    <p className="text-xs text-gold-300">Short demo: {p.professionalStyle}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -294,17 +438,23 @@ export function AdWizard({
         <div className="grid gap-4 md:grid-cols-2">
           <Select label="Marketing goal" value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })}>
             {GOALS.map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
+              <option key={g.id} value={g.id}>
+                {g.label}
+              </option>
             ))}
           </Select>
           <Select label="Format" value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value })}>
             {FORMATS.map((f) => (
-              <option key={f.id} value={f.id}>{f.label} — {f.hint}</option>
+              <option key={f.id} value={f.id}>
+                {f.label} — {f.hint}
+              </option>
             ))}
           </Select>
           <Select label="Language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
             {LANGUAGES.map((l) => (
-              <option key={l.id} value={l.id}>{l.label}</option>
+              <option key={l.id} value={l.id}>
+                {l.label}
+              </option>
             ))}
           </Select>
           <Select label="Speaking tone" value={form.tone} onChange={(e) => setForm({ ...form, tone: e.target.value })}>
@@ -312,6 +462,7 @@ export function AdWizard({
               <option key={t}>{t}</option>
             ))}
           </Select>
+          <VoicePicker value={form.voiceId} gender={selected?.gender} onChange={(voiceId) => setForm({ ...form, voiceId })} />
           <Field
             label="Director prompt — look and movement"
             value={form.directorPrompt}
@@ -320,12 +471,16 @@ export function AdWizard({
           />
           <Select label="Film length" value={form.durationSeconds} onChange={(e) => setForm({ ...form, durationSeconds: e.target.value })}>
             {[12, 20, 24, 30, 36, 48].map((n) => (
-              <option key={n} value={String(n)}>{n} seconds</option>
+              <option key={n} value={String(n)}>
+                {n} seconds
+              </option>
             ))}
           </Select>
           <Select label="Music" value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>
             {MUSIC_BEDS.map((m) => (
-              <option key={m.id} value={m.id}>{m.label}</option>
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
             ))}
           </Select>
         </div>
@@ -338,7 +493,11 @@ export function AdWizard({
             It determines what you sell, who it is for, the strongest benefits, the right tone, which assets to show, and
             the call to action. Then it writes advertising copy — it will not simply repeat your description.
           </p>
-          {selected ? <p className="text-sm text-gold-300">Presenter: {selected.name}</p> : null}
+          {selected ? (
+            <p className="text-sm text-gold-300">
+              Presenter: {selected.name} · Voice: {studioVoiceForPresenter(form.voiceId, selected.gender).label}
+            </p>
+          ) : null}
           <Button disabled={busy} onClick={() => void analyze()}>
             {busy ? "Analyzing…" : "Analyze and write the script"}
           </Button>
@@ -386,9 +545,7 @@ export function AdWizard({
         <Button variant="ghost" disabled={step === 1} onClick={() => setStep((s) => s - 1)}>
           Back
         </Button>
-        {step < 5 ? (
-          <Button onClick={() => setStep((s) => s + 1)}>Continue</Button>
-        ) : null}
+        {step < 5 ? <Button onClick={() => setStep((s) => s + 1)}>Continue</Button> : null}
       </div>
     </div>
   );

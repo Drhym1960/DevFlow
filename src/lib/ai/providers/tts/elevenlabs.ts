@@ -9,7 +9,7 @@ export const elevenLabsTtsProvider: TtsProvider = {
     label: "ElevenLabs TTS",
     configured: Boolean(process.env.ELEVENLABS_API_KEY),
     requires: ["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"],
-    notes: "Matches the presenter: bold male voices for men, the studio female voice for women. Mixed over the performance after lip-sync.",
+    notes: "Matches the presenter unless the client picks another studio voice. Male models never fall back to a female voice. Mixed over the performance after lip-sync.",
   }),
   async synthesize(input) {
     if (!process.env.ELEVENLABS_API_KEY) return openaiTtsProvider.synthesize(input);

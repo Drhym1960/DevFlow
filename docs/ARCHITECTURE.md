@@ -86,7 +86,7 @@ All providers implement typed ports in `src/lib/ai/ports.ts` and are resolved by
 | --- | --- | --- |
 | `LlmProvider` | Script, analysis, rewrite | OpenAI-compatible, Studio Copy Engine |
 | `TranslationProvider` | Script + caption translation | OpenAI-compatible, Studio translator |
-| `TtsProvider` | Voice audio | ElevenLabs (gender-matched: male presenters get a bold male voice) or OpenAI TTS |
+| `TtsProvider` | Voice audio | Client-picked studio voice (Bold male, Warm female, …). Male models never fall back to a female voice unless the client chose one. |
 | `ImageProvider` | Presenter / scene stills | OpenAI Images (config) |
 | `MotionProvider` | Photo or model + audio → talking performance | **Sora is default** (Yuna flow: walk, turn, gesture, smile). SadTalker / D-ID / Fal remain fallbacks. |
 | `AvatarProvider` | Consistent presenter identity | Studio portrait engine |
@@ -99,11 +99,13 @@ Credentials are read from environment variables. Missing credentials never inven
 
 The **Studio Copy Engine** is a first-class on-device marketing writer. It produces original advertising copy from structured brand analysis. It is not a stub that echoes the brief.
 
+Clients can **write anything** (`POST /api/studio/from-idea`). The studio expands the sentence into a brief, generates a presenter portrait when a person is described (or picks a library model), generates product stills, writes the script, and can render immediately. Voice is a client choice on every path: library, photo, describe-a-model, and idea.
+
 ## Advertisement engine stages
 
 1. **Analyzing Brand** — extract product, audience, benefits, best assets, CTA
 2. **Writing Script** — original ad copy, not a restatement of the brief
-3. **Creating Voice** — TTS for the selected language / accent / tone
+3. **Creating Voice** — TTS for the client-picked studio voice (never a mismatched gender unless they chose it)
 4. **Generating Presenter** — consistent identity frames + motion cues
 5. **Building Scenes** — intelligent layouts around product assets
 6. **Adding Branding** — colors, logo, captions, music, CTA card

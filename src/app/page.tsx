@@ -20,7 +20,7 @@ const STUDIO = [
   { href: "/login", title: "Sign in", copy: "Open the studio. Demo: studio@devflow.ai" },
   { href: "/presenters", title: "Presenter library", copy: "Pick a realistic model by category and region." },
   { href: "/presenters/create", title: "Upload a photo", copy: "A client or director becomes the speaker." },
-  { href: "/videos/new", title: "Create a film", copy: "Brief, brand, presenter, script, then a full cut." },
+  { href: "/videos/new", title: "Create a film", copy: "Write an idea, or pick a model and a voice." },
   { href: "/brand-kits", title: "Brand kits", copy: "Colours, product, CTA — reused on every film." },
   { href: "/assets", title: "Product screens", copy: "Screenshots sit beside the presenter while they move." },
 ];
@@ -49,11 +49,11 @@ export default async function LandingPage() {
       <section className="mx-auto max-w-6xl px-6 pb-16 pt-10 md:pt-20">
         <p className="text-xs uppercase tracking-[0.32em] text-gold-400">The studio is live</p>
         <h1 className="mt-5 max-w-4xl font-display text-5xl leading-[1.05] tracking-tight md:text-7xl">
-          Choose your presenter. Upload your brand. Let AI create the advertisement.
+          Write an idea. Pick a model and a voice. Let AI make the advertisement.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-8 text-mist-300">
-          Every library model — and every photo a client uploads — performs the same way: they walk, turn, point, and
-          smile while they talk. Product screens stay beside them.
+          Clients choose the presenter and the voice — or they write anything and the studio generates the pictures,
+          the performance, and the film. Every model walks, turns, and talks with the mouth locked to those words.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link href="/register">

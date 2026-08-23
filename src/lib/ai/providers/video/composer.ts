@@ -145,6 +145,28 @@ export const ffmpegComposer: VideoComposer = {
         ]);
       }
       void advisors;
+      if (input.assetPaths?.length) {
+        try {
+          const overlaid = dest.replace(/\.mp4$/, "-product.mp4");
+          await run("ffmpeg", [
+            "-y",
+            "-i",
+            dest,
+            "-i",
+            input.assetPaths[0],
+            "-filter_complex",
+            "[1:v]scale=400:-1[p];[0:v][p]overlay=W-w-48:160:enable='gte(t,4)*lte(t,18)'",
+            "-c:a",
+            "copy",
+            "-movflags",
+            "+faststart",
+            overlaid,
+          ]);
+          await rename(overlaid, dest);
+        } catch {
+          /* keep the performance if the product panel cannot be placed */
+        }
+      }
       if (input.audioPath) {
         const remuxed = dest.replace(/\.mp4$/, "-vo.mp4");
         await run("ffmpeg", [

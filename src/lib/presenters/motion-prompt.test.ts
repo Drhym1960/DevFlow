@@ -53,4 +53,14 @@ describe("motion prompt", () => {
     assert.match(inferred.clothingStyle, /white suit/i);
     assert.equal(inferred.region, "United States");
   });
+
+  it("treats handsome / clean-cut as male even without the word man", () => {
+    const inferred = inferPresenterFromPrompt("handsome clean-cut American in a white suit, professional advice");
+    assert.equal(inferred.gender, "male");
+  });
+
+  it("does not assume a woman when the idea never describes a person", () => {
+    const inferred = inferPresenterFromPrompt("a private advice app, 30 seconds, product screens beside the speaker");
+    assert.equal(inferred.gender, "unknown");
+  });
 });
