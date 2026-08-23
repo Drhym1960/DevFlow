@@ -7,13 +7,13 @@ export const dynamic = "force-dynamic";
 
 const FEATURED = [
   "yuna-han",
+  "andre-whitfield",
   "amara-okonkwo",
   "sofia-alvarez",
   "seo-yeon-park",
   "maya-chen",
   "chinedu-adebayo",
   "layla-al-hassan",
-  "jordan-hale",
 ];
 
 const STUDIO = [
@@ -73,14 +73,24 @@ export default async function LandingPage() {
           same free movement, not a locked talking head.
         </p>
         <div className="mt-8 overflow-hidden rounded-[32px] bg-ink-950">
-          <video
-            className="mx-auto aspect-[9/16] w-full max-w-md"
-            src="/demos/yuna-fashion.mp4"
-            poster="/presenters/yuna-han.png"
-            controls
-            playsInline
-            preload="metadata"
-          />
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <video
+              className="aspect-[9/16] w-full rounded-3xl"
+              src="/demos/yuna-fashion.mp4"
+              poster="/presenters/yuna-han.png"
+              controls
+              playsInline
+              preload="metadata"
+            />
+            <video
+              className="aspect-[9/16] w-full rounded-3xl"
+              src="/demos/mystictxt-andre.mp4"
+              poster="/presenters/andre-whitfield.png"
+              controls
+              playsInline
+              preload="metadata"
+            />
+          </div>
         </div>
       </section>
 

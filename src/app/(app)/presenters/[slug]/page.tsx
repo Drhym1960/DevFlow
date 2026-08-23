@@ -37,6 +37,16 @@ export default async function PresenterDetail({ params }: { params: Promise<{ sl
             preload="metadata"
           />
         ) : null}
+        {presenter.slug === "andre-whitfield" ? (
+          <video
+            className="w-full overflow-hidden rounded-3xl"
+            src="/demos/mystictxt-andre.mp4"
+            poster="/presenters/andre-whitfield.png"
+            controls
+            playsInline
+            preload="metadata"
+          />
+        ) : null}
         <div className="flex flex-wrap gap-2">
           {presenter.categories.split(",").map((c) => (
             <Pill key={c}>{c}</Pill>

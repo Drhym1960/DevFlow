@@ -48,7 +48,7 @@ export function AdWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [tab, setTab] = useState<"library" | "mine" | "me">("library");
+  const [tab, setTab] = useState<"library" | "mine" | "me" | "describe">("library");
   const [selfNote, setSelfNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -67,6 +67,8 @@ export function AdWizard({
     tone: "Professional",
     music: "cinematic-warm",
     brandKitId: "",
+    directorPrompt: "",
+    durationSeconds: "12",
   });
 
   const selected = presenters.find((p) => p.id === form.presenterId);
@@ -89,6 +91,8 @@ export function AdWizard({
         website: form.website,
         extra: form.extra,
         colors: form.colors.split(",").map((s) => s.trim()),
+        directorPrompt: form.directorPrompt,
+        durationSeconds: Number(form.durationSeconds) || undefined,
       },
     };
     const res = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", {
@@ -199,6 +203,7 @@ export function AdWizard({
             <button onClick={() => setTab("library")}><Pill active={tab === "library"}>Realistic model</Pill></button>
             <button onClick={() => setTab("mine")}><Pill active={tab === "mine"}>My Presenter</Pill></button>
             <button onClick={() => setTab("me")}><Pill active={tab === "me"}>I will present</Pill></button>
+            <button onClick={() => setTab("describe")}><Pill active={tab === "describe"}>Describe a model</Pill></button>
           </div>
           {tab === "me" ? (
             <label className="glass block cursor-pointer rounded-3xl p-8 text-center">
@@ -229,7 +234,43 @@ export function AdWizard({
               {selfNote ? <p className="mt-3 text-xs text-gold-300">{selfNote}</p> : null}
             </label>
           ) : null}
-          {tab !== "me" ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {tab === "describe" ? (
+            <div className="glass space-y-4 rounded-3xl p-6">
+              <p className="font-display text-xl">Write how they look and how they should move.</p>
+              <p className="text-sm text-mist-500">
+                Yuna-level realism stays the default. Your prompt decides the person, wardrobe, and behaviour — walk,
+                turn, advice, energy, stillness.
+              </p>
+              <Area
+                label="Director prompt"
+                value={form.directorPrompt}
+                onChange={(e) => setForm({ ...form, directorPrompt: e.target.value })}
+              />
+              <Button
+                disabled={busy || form.directorPrompt.trim().length < 12}
+                onClick={async () => {
+                  setBusy(true);
+                  const res = await fetch("/api/presenters/from-prompt", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt: form.directorPrompt, name: form.business ? `${form.business} host` : "" }),
+                  });
+                  const data = await res.json();
+                  setBusy(false);
+                  if (res.ok) {
+                    setForm((f) => ({ ...f, presenterId: data.id }));
+                    setSelfNote(`Model ready: ${data.name}`);
+                  } else {
+                    setSelfNote(data.error ?? "Could not create that model");
+                  }
+                }}
+              >
+                {busy ? "Creating the model…" : "Create this model"}
+              </Button>
+              {selfNote ? <p className="text-xs text-gold-300">{selfNote}</p> : null}
+            </div>
+          ) : null}
+          {tab !== "me" && tab !== "describe" ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((p) => (
               <button
                 key={p.id}
@@ -269,6 +310,17 @@ export function AdWizard({
           <Select label="Speaking tone" value={form.tone} onChange={(e) => setForm({ ...form, tone: e.target.value })}>
             {TONES.map((t) => (
               <option key={t}>{t}</option>
+            ))}
+          </Select>
+          <Field
+            label="Director prompt — look and movement"
+            value={form.directorPrompt}
+            onChange={(e) => setForm({ ...form, directorPrompt: e.target.value })}
+            hint="Optional. Example: handsome clean-cut American man in a white suit, professional advice, composed gestures."
+          />
+          <Select label="Film length" value={form.durationSeconds} onChange={(e) => setForm({ ...form, durationSeconds: e.target.value })}>
+            {[12, 20, 24, 30, 36, 48].map((n) => (
+              <option key={n} value={String(n)}>{n} seconds</option>
             ))}
           </Select>
           <Select label="Music" value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>

@@ -15,6 +15,8 @@ export type BrandBrief = {
   extra?: string;
   colors?: string[];
   assetLabels?: string[];
+  directorPrompt?: string;
+  durationSeconds?: number;
 };
 
 export type BrandAnalysis = {

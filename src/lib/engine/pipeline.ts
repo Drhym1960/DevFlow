@@ -74,20 +74,29 @@ export async function runPipeline(jobId: string) {
     push(logs, "presenter", "Animating the presenter with the Yuna-style motion model");
     await updateJob(jobId, { stage: "presenter", progress: 52, logs });
     let talkVideo: string | null = null;
-    const portrait = await resolvePresenterStill(presenter, logs);
+    const portrait = await resolvePresenterStill(presenter, logs, brief.directorPrompt);
     if (portrait && spoken.audioPath) {
       const audioPath = spoken.audioPath.startsWith("/") ? spoken.audioPath : storage().resolve(spoken.audioPath);
       const outPath = storage().resolve(`renders/${project.id}/talking.mp4`);
-      const prompt = motionPromptFor({
-        name: presenter?.name,
-        gender: presenter?.gender,
-        clothingStyle: presenter?.clothingStyle,
-        studioStyle: presenter?.studioStyle,
-        region: presenter?.region,
-        professionalStyle: presenter?.professionalStyle,
-      });
+      const prompt = motionPromptFor(
+        {
+          name: presenter?.name,
+          gender: presenter?.gender,
+          clothingStyle: presenter?.clothingStyle,
+          studioStyle: presenter?.studioStyle,
+          region: presenter?.region,
+          professionalStyle: presenter?.professionalStyle,
+        },
+        brief.directorPrompt,
+      );
       try {
-        const animated = await motion().animate({ sourceImage: portrait, audioPath, outPath, prompt });
+        const animated = await motion().animate({
+          sourceImage: portrait,
+          audioPath,
+          outPath,
+          prompt,
+          seconds: brief.durationSeconds,
+        });
         talkVideo = animated.videoPath;
         push(logs, "presenter", `Motion via ${animated.provider} — walk, turn, gesture, smile`);
       } catch (error) {
@@ -186,7 +195,7 @@ function existingStillPath(portraitUrl: string | null) {
   return storage().resolve(portraitUrl);
 }
 
-async function resolvePresenterStill(presenter: StillPresenter | null, logs: JobLog[]) {
+async function resolvePresenterStill(presenter: StillPresenter | null, logs: JobLog[], directorPrompt?: string) {
   if (!presenter) return null;
   const existing = existingStillPath(presenter.portraitUrl);
   if (existing && !existing.startsWith("http")) {
@@ -200,7 +209,7 @@ async function resolvePresenterStill(presenter: StillPresenter | null, logs: Job
   }
   if (existing?.startsWith("http")) return existing;
   push(logs, "presenter", "Creating a photoreal standing still so this presenter can move like Yuna Han");
-  const generated = await images().generate(stillPromptFor(presenter));
+  const generated = await images().generate(stillPromptFor(presenter, directorPrompt));
   if (!generated.imagePath) return existing;
   if (!generated.imagePath.startsWith("http")) return generated.imagePath;
   const res = await fetch(generated.imagePath);

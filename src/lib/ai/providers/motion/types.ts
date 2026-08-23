@@ -6,6 +6,7 @@ export type MotionRequest = {
   outPath: string;
   still?: boolean;
   prompt?: string;
+  seconds?: number;
 };
 
 export type MotionProvider = {

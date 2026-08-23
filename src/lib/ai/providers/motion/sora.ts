@@ -27,11 +27,26 @@ type SoraJob = {
   error?: { message?: string } | null;
 };
 
-async function createJob(imagePath: string, key: string, prompt: string) {
+function firstClipSeconds(wanted: number) {
+  if (wanted >= 20) return "12";
+  if (wanted >= 12) return "12";
+  if (wanted >= 8) return "8";
+  return "4";
+}
+
+function extensionSeconds(remaining: number) {
+  if (remaining >= 20) return "20";
+  if (remaining >= 16) return "16";
+  if (remaining >= 12) return "12";
+  if (remaining >= 8) return "8";
+  return "4";
+}
+
+async function createJob(imagePath: string, key: string, prompt: string, seconds: string) {
   const form = new FormData();
   form.set("model", process.env.SORA_MODEL ?? "sora-2");
   form.set("prompt", prompt);
-  form.set("seconds", process.env.SORA_SECONDS ?? "12");
+  form.set("seconds", seconds);
   form.set("size", "720x1280");
   const jpeg = await readFile(imagePath);
   form.set("input_reference", new Blob([new Uint8Array(jpeg)], { type: "image/jpeg" }), "presenter.jpg");
@@ -46,7 +61,7 @@ async function createJob(imagePath: string, key: string, prompt: string) {
 }
 
 async function pollJob(id: string, key: string) {
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 120; i++) {
     const res = await fetch(`https://api.openai.com/v1/videos/${id}`, {
       headers: { Authorization: `Bearer ${key}` },
     });
@@ -58,6 +73,24 @@ async function pollJob(id: string, key: string) {
   throw new Error("Sora generation timed out");
 }
 
+async function extendJob(videoId: string, key: string, prompt: string, seconds: string) {
+  const res = await fetch("https://api.openai.com/v1/videos/extensions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      prompt,
+      seconds,
+      video: { id: videoId },
+    }),
+  });
+  const body = (await res.json()) as SoraJob & { error?: { message?: string } };
+  if (!res.ok || !body.id) throw new Error(body.error?.message ?? "Sora extend failed");
+  return body;
+}
+
 export const soraMotion: MotionProvider = {
   status: () => ({
     id: "sora",
@@ -65,10 +98,10 @@ export const soraMotion: MotionProvider = {
     label: "Sora full-body motion",
     configured: Boolean(process.env.OPENAI_API_KEY),
     requires: ["OPENAI_API_KEY"],
-    notes: "Default studio motion. Any library model or uploaded client photo performs like Yuna Han: walk, turn, point, smile while talking. Mixes studio voice over the performance.",
+    notes: "Default Yuna-quality motion. Clients can write their own look and movement prompt. Longer films extend the same performance.",
   }),
 
-  async animate({ sourceImage, audioPath, outPath, prompt }) {
+  async animate({ sourceImage, audioPath, outPath, prompt, seconds }) {
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new Error("OPENAI_API_KEY is not set");
     await mkdir(path.dirname(outPath), { recursive: true });
@@ -83,10 +116,24 @@ export const soraMotion: MotionProvider = {
       "2",
       ref,
     ]);
-    const created = await createJob(ref, key, prompt || process.env.SORA_PROMPT || DEFAULT_PROMPT);
-    await pollJob(created.id, key);
+    const wanted = Math.max(4, Math.min(120, Math.round(seconds || Number(process.env.SORA_SECONDS) || 12)));
+    const motionPrompt = prompt || process.env.SORA_PROMPT || DEFAULT_PROMPT;
+    let job = await createJob(ref, key, motionPrompt, firstClipSeconds(wanted));
+    await pollJob(job.id, key);
+    let produced = Number(firstClipSeconds(wanted));
+    while (produced < wanted - 1) {
+      const add = extensionSeconds(wanted - produced);
+      const extPrompt = `${motionPrompt} Continue the same person and wardrobe. Keep moving and talking naturally.`;
+      try {
+        job = await extendJob(job.id, key, extPrompt, add);
+        await pollJob(job.id, key);
+        produced += Number(add);
+      } catch {
+        break;
+      }
+    }
     const raw = path.join(path.dirname(outPath), "sora-raw.mp4");
-    const content = await fetch(`https://api.openai.com/v1/videos/${created.id}/content`, {
+    const content = await fetch(`https://api.openai.com/v1/videos/${job.id}/content`, {
       headers: { Authorization: `Bearer ${key}` },
     });
     if (!content.ok) throw new Error("Sora download failed");
