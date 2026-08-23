@@ -71,6 +71,7 @@ export type TtsProvider = {
     language: string;
     rate: number;
     tone: string;
+    gender?: string;
   }): Promise<{ audioPath: string | null; visemes: { t: number; viseme: string }[]; provider: string }>;
 };
 

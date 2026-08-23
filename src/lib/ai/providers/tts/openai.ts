@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import type { TtsProvider } from "@/lib/ai/ports";
 import { studioLipSync } from "../lipsync/studio";
+import { resolveOpenAiVoice } from "./voices";
 
 export const openaiTtsProvider: TtsProvider = {
   status: () => ({
@@ -10,10 +11,10 @@ export const openaiTtsProvider: TtsProvider = {
     label: "OpenAI TTS",
     configured: Boolean(process.env.OPENAI_API_KEY),
     requires: ["OPENAI_API_KEY"],
-    notes: "When unset, visemes are still aligned locally and the compositor uses a generated music bed. No fake voice file is invented.",
+    notes: "Male presenters map to a deep voice (onyx). Female presenters keep a matching studio voice.",
   }),
 
-  async synthesize({ text, voiceId, language, rate }) {
+  async synthesize({ text, voiceId, language, rate, gender }) {
     const visemes = studioLipSync.align(text, language);
     if (!process.env.OPENAI_API_KEY) {
       return { audioPath: null, visemes, provider: "unconfigured" };
@@ -26,7 +27,7 @@ export const openaiTtsProvider: TtsProvider = {
       },
       body: JSON.stringify({
         model: process.env.OPENAI_TTS_MODEL ?? "gpt-4o-mini-tts",
-        voice: mapVoice(voiceId),
+        voice: resolveOpenAiVoice(voiceId, gender),
         input: text,
         speed: rate,
       }),
@@ -42,11 +43,3 @@ export const openaiTtsProvider: TtsProvider = {
     return { audioPath: rel, visemes, provider: "openai-tts" };
   },
 };
-
-function mapVoice(voiceId: string) {
-  if (voiceId.includes("warm") || voiceId.includes("soft") || voiceId.includes("silk")) return "nova";
-  if (voiceId.includes("deep") || voiceId.includes("low") || voiceId.includes("formal")) return "onyx";
-  if (voiceId.includes("bright") || voiceId.includes("energy") || voiceId.includes("glow")) return "shimmer";
-  if (voiceId.includes("sales") || voiceId.includes("fast")) return "echo";
-  return process.env.OPENAI_TTS_VOICE ?? "alloy";
-}

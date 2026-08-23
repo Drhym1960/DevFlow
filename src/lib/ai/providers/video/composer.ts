@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, rename, writeFile } from "fs/promises";
 import path from "path";
 import { spawn } from "child_process";
 import { PNG } from "pngjs";
@@ -145,6 +145,29 @@ export const ffmpegComposer: VideoComposer = {
         ]);
       }
       void advisors;
+      if (input.audioPath) {
+        const remuxed = dest.replace(/\.mp4$/, "-vo.mp4");
+        await run("ffmpeg", [
+          "-y",
+          "-i",
+          dest,
+          "-i",
+          input.audioPath,
+          "-map",
+          "0:v:0",
+          "-map",
+          "1:a:0",
+          "-c:v",
+          "copy",
+          "-c:a",
+          "aac",
+          "-shortest",
+          "-movflags",
+          "+faststart",
+          remuxed,
+        ]);
+        await rename(remuxed, dest);
+      }
       const duration = input.scenes.reduce((s, sc) => s + sc.duration, 0);
       return { videoPath: dest, duration };
     }

@@ -68,6 +68,7 @@ export async function runPipeline(jobId: string) {
       language: project.language,
       rate: project.speechRate,
       tone: project.voiceTone,
+      gender: project.presenter?.gender,
     });
 
     const presenter = project.presenter;
@@ -99,12 +100,14 @@ export async function runPipeline(jobId: string) {
         });
         talkVideo = animated.videoPath;
         push(logs, "presenter", `Motion via ${animated.provider} — walk, turn, gesture, smile`);
+        talkVideo = await lockMouthToVoice(talkVideo, audioPath, project.id, logs);
       } catch (error) {
         push(logs, "presenter", error instanceof Error ? error.message : "Primary motion unavailable; trying fallback");
         try {
           const fallback = await sadTalkerMotion.animate({ sourceImage: portrait, audioPath, outPath });
           talkVideo = fallback.videoPath;
           push(logs, "presenter", `Motion via ${fallback.provider}`);
+          talkVideo = await lockMouthToVoice(talkVideo, audioPath, project.id, logs);
         } catch {
           push(logs, "presenter", "Motion model unavailable; falling back to stills");
         }
@@ -186,6 +189,20 @@ type StillPresenter = {
   studioStyle: string;
   portraitUrl: string | null;
 };
+
+async function lockMouthToVoice(talkVideo: string, audioPath: string, projectId: string, logs: JobLog[]) {
+  try {
+    const { lipSyncVideo } = await import("@/lib/ai/providers/lipsync/wav2lip");
+    const synced = await lipSyncVideo(talkVideo, audioPath, storage().resolve(`renders/${projectId}/talking-sync.mp4`));
+    if (synced) {
+      push(logs, "presenter", "Mouth locked to the studio voice");
+      return synced;
+    }
+  } catch (syncError) {
+    push(logs, "presenter", syncError instanceof Error ? syncError.message : "Lip-sync skipped");
+  }
+  return talkVideo;
+}
 
 function existingStillPath(portraitUrl: string | null) {
   if (!portraitUrl) return null;

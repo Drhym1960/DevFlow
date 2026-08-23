@@ -1,5 +1,6 @@
 import type { TtsProvider } from "@/lib/ai/ports";
 import { openaiTtsProvider } from "./openai";
+import { resolveElevenVoice } from "./voices";
 
 export const elevenLabsTtsProvider: TtsProvider = {
   status: () => ({
@@ -8,11 +9,12 @@ export const elevenLabsTtsProvider: TtsProvider = {
     label: "ElevenLabs TTS",
     configured: Boolean(process.env.ELEVENLABS_API_KEY),
     requires: ["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID"],
-    notes: "Studio voice for every presenter. Mixed over the full-body performance.",
+    notes: "Matches the presenter: bold male voices for men, the studio female voice for women. Mixed over the performance after lip-sync.",
   }),
   async synthesize(input) {
     if (!process.env.ELEVENLABS_API_KEY) return openaiTtsProvider.synthesize(input);
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}`, {
+    const voice = resolveElevenVoice(input.voiceId, input.gender);
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
       method: "POST",
       headers: {
         "xi-api-key": process.env.ELEVENLABS_API_KEY,

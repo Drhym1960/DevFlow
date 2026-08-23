@@ -69,8 +69,8 @@ export default async function LandingPage() {
         <p className="text-xs uppercase tracking-[0.32em] text-gold-400">The performance</p>
         <h2 className="mt-3 max-w-3xl font-display text-4xl">This is how every presenter talks.</h2>
         <p className="mt-4 max-w-2xl text-mist-300">
-          Yuna Han is the reference cut. Pick Amara, upload a client photo, or design a new ambassador — they get the
-          same free movement, not a locked talking head.
+          Yuna Han is the quality floor. Clients write their own prompt for look and movement — Andre Whitfield is a
+          30-second MysticTxt advisor cut with a bold male voice, mouth locked to the words, not a locked talking head.
         </p>
         <div className="mt-8 overflow-hidden rounded-[32px] bg-ink-950">
           <div className="mt-8 grid gap-6 md:grid-cols-2">

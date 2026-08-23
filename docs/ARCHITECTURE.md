@@ -86,11 +86,11 @@ All providers implement typed ports in `src/lib/ai/ports.ts` and are resolved by
 | --- | --- | --- |
 | `LlmProvider` | Script, analysis, rewrite | OpenAI-compatible, Studio Copy Engine |
 | `TranslationProvider` | Script + caption translation | OpenAI-compatible, Studio translator |
-| `TtsProvider` | Voice audio | OpenAI TTS, ElevenLabs (config) |
+| `TtsProvider` | Voice audio | ElevenLabs (gender-matched: male presenters get a bold male voice) or OpenAI TTS |
 | `ImageProvider` | Presenter / scene stills | OpenAI Images (config) |
 | `MotionProvider` | Photo or model + audio → talking performance | **Sora is default** (Yuna flow: walk, turn, gesture, smile). SadTalker / D-ID / Fal remain fallbacks. |
 | `AvatarProvider` | Consistent presenter identity | Studio portrait engine |
-| `LipSyncProvider` | Speech-aligned mouth/face cues | Studio viseme mapper |
+| `LipSyncProvider` | Speech-aligned mouth on the existing performance | Wav2Lip locks the mouth to studio voice without replacing body motion. Studio visemes remain the caption/timeline fallback. |
 | `VideoComposer` | Scene layouts + ffmpeg render | Local compositor |
 | `StorageProvider` | Files | Local disk (S3-shaped port) |
 | `PaymentsProvider` | Plans + checkout | Studio billing (Stripe-shaped port) |
