@@ -106,6 +106,8 @@ export async function runPipeline(jobId: string) {
       music: project.music,
       assetPaths: [],
       outDir: storage().resolve("renders"),
+      audioPath: spoken.audioPath ? storage().resolve(spoken.audioPath) : null,
+      talkFrameDir: process.env.TALK_FRAME_DIR || null,
     });
 
     await db.video.create({

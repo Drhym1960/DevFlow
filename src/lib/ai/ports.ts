@@ -134,6 +134,8 @@ export type RenderInput = {
   music: string;
   assetPaths: string[];
   outDir: string;
+  audioPath?: string | null;
+  talkFrameDir?: string | null;
 };
 
 export type StorageProvider = {

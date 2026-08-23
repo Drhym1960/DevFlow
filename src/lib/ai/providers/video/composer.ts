@@ -115,6 +115,18 @@ export const ffmpegComposer: VideoComposer = {
   }),
 
   async render(input) {
+    if (input.audioPath && input.talkFrameDir) {
+      const dest = path.join(input.outDir, input.projectId, "ad.mp4");
+      await mkdir(path.dirname(dest), { recursive: true });
+      await run("python3", [
+        path.resolve("scripts/talking_presenter.py"),
+        input.talkFrameDir,
+        input.audioPath,
+        dest,
+      ]);
+      const duration = input.scenes.reduce((s, sc) => s + sc.duration, 0);
+      return { videoPath: dest, duration };
+    }
     const dir = path.join(input.outDir, input.projectId);
     await mkdir(dir, { recursive: true });
     const clips: string[] = [];
