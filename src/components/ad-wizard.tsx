@@ -1,0 +1,573 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FORMATS, GOALS, LANGUAGES, MUSIC_BEDS, TONES } from "@/lib/constants";
+import { defaultVoiceId, studioVoiceForPresenter } from "@/lib/ai/providers/tts/voices";
+import { portraitSrc } from "@/lib/presenters/portrait";
+import { Area, Button, Field, Pill, Select } from "./ui";
+import { VoicePicker } from "./voice-picker";
+
+type Presenter = {
+  id: string;
+  name: string;
+  slug: string;
+  isCustom: boolean;
+  categories: string;
+  voiceId: string;
+  languages: string;
+  speakingTone: string;
+  professionalStyle: string;
+  gender: string;
+  skinTone: string;
+  hair: string;
+  clothingStyle: string;
+  portraitSeed: string;
+  studioStyle: string;
+  portraitUrl?: string | null;
+};
+
+type Kit = { id: string; name: string; businessName: string; productInfo: string; website: string | null; defaultCta: string; colors: string };
+
+type Script = {
+  headline: string;
+  voiceover: string;
+  beats: { id: string; line: string; visual: string }[];
+  cta: string;
+  captions: string;
+  language: string;
+  provider: string;
+};
+
+export function AdWizard({
+  presenters,
+  kits,
+  presetPresenter,
+}: {
+  presenters: Presenter[];
+  kits: Kit[];
+  presetPresenter?: string;
+}) {
+  const router = useRouter();
+  const initialPresenter = presenters.find((p) => p.id === presetPresenter) ?? presenters[0];
+  const [step, setStep] = useState(1);
+  const [start, setStart] = useState<"idea" | "details">(presetPresenter ? "details" : "idea");
+  const [tab, setTab] = useState<"library" | "mine" | "me" | "describe">("library");
+  const [selfNote, setSelfNote] = useState("");
+  const [photoGender, setPhotoGender] = useState<"male" | "female" | "">("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [script, setScript] = useState<Script | null>(null);
+  const [localPresenters, setLocalPresenters] = useState(presenters);
+  const [form, setForm] = useState({
+    idea: "",
+    business: "",
+    product: "",
+    website: "",
+    extra: "",
+    colors: "#0c0c14, #d4a853, #f4f1ea",
+    presenterId: initialPresenter?.id ?? "",
+    voiceId: studioVoiceForPresenter(initialPresenter?.voiceId, initialPresenter?.gender).id,
+    goal: "app-promo",
+    format: "vertical",
+    language: "en",
+    tone: "Professional",
+    music: "cinematic-warm",
+    brandKitId: "",
+    directorPrompt: "",
+    durationSeconds: "12",
+  });
+
+  const selected = localPresenters.find((p) => p.id === form.presenterId);
+  const visible = localPresenters.filter((p) => (tab === "mine" ? p.isCustom : !p.isCustom));
+
+  function choosePresenter(p: Presenter) {
+    setForm((f) => ({
+      ...f,
+      presenterId: p.id,
+      voiceId: studioVoiceForPresenter(p.voiceId, p.gender).id,
+    }));
+  }
+
+  async function persist(status = "draft") {
+    const payload = {
+      title: form.business || form.idea.slice(0, 48) || "Untitled film",
+      status,
+      format: form.format,
+      goal: form.goal,
+      language: form.language,
+      voiceTone: form.tone,
+      music: form.music,
+      presenterId: form.presenterId,
+      brandKitId: form.brandKitId || null,
+      brief: {
+        business: form.business,
+        product: form.product || form.idea,
+        website: form.website,
+        extra: form.extra || form.idea,
+        idea: form.idea,
+        colors: form.colors.split(",").map((s) => s.trim()),
+        directorPrompt: form.directorPrompt,
+        durationSeconds: Number(form.durationSeconds) || undefined,
+        voiceId: form.voiceId,
+      },
+    };
+    const res = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", {
+      method: projectId ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Could not save");
+    setProjectId(data.id);
+    return data.id as string;
+  }
+
+  async function fromIdea(render: boolean) {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/studio/from-idea", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: form.idea, voiceId: form.voiceId, render }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "The studio could not take that idea.");
+      if (data.presenter && !localPresenters.some((p) => p.id === data.presenter.id)) {
+        setLocalPresenters((list) => [data.presenter, ...list]);
+      }
+      setProjectId(data.projectId);
+      setForm((f) => ({
+        ...f,
+        business: data.film.business,
+        product: data.film.product,
+        extra: data.film.extra,
+        presenterId: data.presenter.id,
+        voiceId: data.film.voiceId,
+        goal: data.film.goal,
+        format: data.film.format,
+        tone: data.film.tone,
+        music: data.film.music,
+        directorPrompt: data.film.directorPrompt,
+        durationSeconds: String(data.film.durationSeconds),
+      }));
+      if (data.script) setScript(data.script);
+      if (render) {
+        router.push(`/videos/${data.projectId}`);
+        return;
+      }
+      setStep(6);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The studio could not take that idea.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function analyze() {
+    setBusy(true);
+    setError("");
+    try {
+      const id = await persist("analyzing");
+      const res = await fetch(`/api/projects/${id}/analyze`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Analysis failed");
+      setScript(data.script);
+      setStep(6);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Analysis failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rewrite(instruction: string) {
+    if (!projectId) return;
+    setBusy(true);
+    const res = await fetch(`/api/projects/${projectId}/script`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ instruction, script }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (res.ok) setScript(data.script);
+  }
+
+  async function render() {
+    if (!script) return;
+    setBusy(true);
+    try {
+      const id = await persist("composing");
+      await fetch(`/api/projects/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ script, status: "composing" }),
+      });
+      const res = await fetch(`/api/projects/${id}/render`, { method: "POST" });
+      if (res.ok) router.push(`/videos/${id}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const steps = ["Idea", "Brand", "Presenter", "Goal", "Understand", "Script"];
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-wrap gap-2">
+        {steps.map((label, i) => (
+          <button key={label} onClick={() => setStep(i + 1)} className="text-left">
+            <Pill active={step === i + 1}>
+              {i + 1} {label}
+            </Pill>
+          </button>
+        ))}
+      </div>
+
+      {step === 1 && (
+        <div className="grid gap-4">
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setStart("idea")}>
+              <Pill active={start === "idea"}>I have an idea</Pill>
+            </button>
+            <button onClick={() => setStart("details")}>
+              <Pill active={start === "details"}>I will fill in the details</Pill>
+            </button>
+          </div>
+          {start === "idea" ? (
+            <div className="glass space-y-4 rounded-3xl p-6">
+              <p className="font-display text-2xl">Write anything. The studio will make the film.</p>
+              <p className="text-sm leading-7 text-mist-300">
+                A product, a person, a feeling, a length — even a messy sentence. The studio picks or generates the
+                model, draws the pictures, chooses a matching voice unless you pick one, writes the script, and renders.
+              </p>
+              <Area
+                label="Your idea"
+                value={form.idea}
+                onChange={(e) => setForm({ ...form, idea: e.target.value })}
+                placeholder="Private advice app, handsome American man in a white suit, bold male voice, 30 seconds"
+              />
+              <VoicePicker value={form.voiceId} onChange={(voiceId) => setForm({ ...form, voiceId })} />
+              <div className="flex flex-wrap gap-3">
+                <Button disabled={busy || form.idea.trim().length < 8} onClick={() => void fromIdea(true)}>
+                  {busy ? "Making the film…" : "Make the film"}
+                </Button>
+                <Button variant="ghost" disabled={busy || form.idea.trim().length < 8} onClick={() => void fromIdea(false)}>
+                  Review the script first
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Field label="Business name" value={form.business} onChange={(e) => setForm({ ...form, business: e.target.value })} />
+              <Area label="What are you advertising?" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} />
+              <Field label="Website URL" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} hint="Fetched when technically reachable" />
+              <Area label="Campaign notes" value={form.extra} onChange={(e) => setForm({ ...form, extra: e.target.value })} />
+              {kits.length ? (
+                <Select
+                  label="Or start from a Brand Kit"
+                  value={form.brandKitId}
+                  onChange={(e) => {
+                    const kit = kits.find((k) => k.id === e.target.value);
+                    setForm({
+                      ...form,
+                      brandKitId: e.target.value,
+                      business: kit?.businessName || form.business,
+                      product: kit?.productInfo || form.product,
+                      website: kit?.website || form.website,
+                    });
+                  }}
+                >
+                  <option value="">None</option>
+                  {kits.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.name}
+                    </option>
+                  ))}
+                </Select>
+              ) : null}
+            </>
+          )}
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-4">
+          <p className="text-sm text-mist-300">Upload logos, product photos, screenshots and brand colours. If you skip this, the studio will draw product pictures from the idea.</p>
+          <Field label="Brand colours" value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} />
+          <UploadBox projectHint={form.business || form.idea} />
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setTab("library")}>
+              <Pill active={tab === "library"}>Realistic model</Pill>
+            </button>
+            <button onClick={() => setTab("mine")}>
+              <Pill active={tab === "mine"}>My Presenter</Pill>
+            </button>
+            <button onClick={() => setTab("me")}>
+              <Pill active={tab === "me"}>I will present</Pill>
+            </button>
+            <button onClick={() => setTab("describe")}>
+              <Pill active={tab === "describe"}>Describe a model</Pill>
+            </button>
+          </div>
+          <VoicePicker
+            value={form.voiceId}
+            gender={selected?.gender || photoGender || undefined}
+            onChange={(voiceId) => setForm({ ...form, voiceId })}
+          />
+          {tab === "me" ? (
+            <label className="glass block cursor-pointer rounded-3xl p-8 text-center">
+              <p className="font-display text-xl">Upload your photo</p>
+              <p className="mt-2 text-sm text-mist-500">
+                Choose gender and voice first so this person is never given the wrong voice. Then they walk, turn, and talk.
+              </p>
+              <div className="mt-4 grid gap-3 text-left md:grid-cols-2">
+                <Select label="Gender of the person in the photo" value={photoGender} onChange={(e) => {
+                  const gender = e.target.value as "male" | "female" | "";
+                  setPhotoGender(gender);
+                  if (gender) setForm((f) => ({ ...f, voiceId: defaultVoiceId(gender) }));
+                }}>
+                  <option value="">Choose male or female</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </Select>
+              </div>
+              <input
+                className="mt-4 block w-full text-sm"
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (!photoGender) {
+                    setSelfNote("Choose male or female first so the voice matches.");
+                    return;
+                  }
+                  const body = new FormData();
+                  body.append("photo", file);
+                  body.append("name", form.business ? `${form.business} director` : "Director");
+                  body.append("gender", photoGender);
+                  body.append("voiceId", form.voiceId);
+                  const res = await fetch("/api/presenters/from-photo", { method: "POST", body });
+                  const data = await res.json();
+                  if (res.ok) {
+                    setLocalPresenters((list) => [data, ...list]);
+                    choosePresenter(data);
+                    setSelfNote(`Motion presenter ready: ${data.name}`);
+                  } else {
+                    setSelfNote(data.error ?? "Upload failed");
+                  }
+                }}
+              />
+              {selfNote ? <p className="mt-3 text-xs text-gold-300">{selfNote}</p> : null}
+            </label>
+          ) : null}
+          {tab === "describe" ? (
+            <div className="glass space-y-4 rounded-3xl p-6">
+              <p className="font-display text-xl">Write how they look and how they should move.</p>
+              <p className="text-sm text-mist-500">
+                The studio generates the portrait from your description, then performs it. Pick the voice they should speak in.
+              </p>
+              <Area
+                label="Director prompt"
+                value={form.directorPrompt}
+                onChange={(e) => setForm({ ...form, directorPrompt: e.target.value })}
+              />
+              <Button
+                disabled={busy || form.directorPrompt.trim().length < 12}
+                onClick={async () => {
+                  setBusy(true);
+                  const res = await fetch("/api/presenters/from-prompt", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      prompt: form.directorPrompt,
+                      name: form.business ? `${form.business} host` : "",
+                      voiceId: form.voiceId,
+                    }),
+                  });
+                  const data = await res.json();
+                  setBusy(false);
+                  if (res.ok) {
+                    setLocalPresenters((list) => [data, ...list]);
+                    setForm((f) => ({ ...f, presenterId: data.id, voiceId: data.voiceId || f.voiceId }));
+                    setSelfNote(`Model ready: ${data.name}`);
+                  } else {
+                    setSelfNote(data.error ?? "Could not create that model");
+                  }
+                }}
+              >
+                {busy ? "Creating the model…" : "Create this model"}
+              </Button>
+              {selfNote ? <p className="text-xs text-gold-300">{selfNote}</p> : null}
+            </div>
+          ) : null}
+          {tab !== "me" && tab !== "describe" ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {visible.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => choosePresenter(p)}
+                  className={`glass overflow-hidden rounded-3xl text-left ${form.presenterId === p.id ? "ring-2 ring-gold-400" : ""}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={portraitSrc(p)} alt={p.name} className="aspect-[4/5] w-full object-cover" />
+                  <div className="space-y-1 p-4">
+                    <p className="font-display text-xl">{p.name}</p>
+                    <p className="text-xs text-mist-500">
+                      {studioVoiceForPresenter(p.voiceId, p.gender).label} · {p.languages} · {p.speakingTone}
+                    </p>
+                    <p className="text-xs text-gold-300">Short demo: {p.professionalStyle}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
+
+      {step === 4 && (
+        <div className="grid gap-4 md:grid-cols-2">
+          <Select label="Marketing goal" value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })}>
+            {GOALS.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.label}
+              </option>
+            ))}
+          </Select>
+          <Select label="Format" value={form.format} onChange={(e) => setForm({ ...form, format: e.target.value })}>
+            {FORMATS.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label} — {f.hint}
+              </option>
+            ))}
+          </Select>
+          <Select label="Language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+            {LANGUAGES.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.label}
+              </option>
+            ))}
+          </Select>
+          <Select label="Speaking tone" value={form.tone} onChange={(e) => setForm({ ...form, tone: e.target.value })}>
+            {TONES.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </Select>
+          <VoicePicker value={form.voiceId} gender={selected?.gender} onChange={(voiceId) => setForm({ ...form, voiceId })} />
+          <Field
+            label="Director prompt — look and movement"
+            value={form.directorPrompt}
+            onChange={(e) => setForm({ ...form, directorPrompt: e.target.value })}
+            hint="Optional. Example: handsome clean-cut American man in a white suit, professional advice, composed gestures."
+          />
+          <Select label="Film length" value={form.durationSeconds} onChange={(e) => setForm({ ...form, durationSeconds: e.target.value })}>
+            {[12, 20, 24, 30, 36, 48].map((n) => (
+              <option key={n} value={String(n)}>
+                {n} seconds
+              </option>
+            ))}
+          </Select>
+          <Select label="Music" value={form.music} onChange={(e) => setForm({ ...form, music: e.target.value })}>
+            {MUSIC_BEDS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+      )}
+
+      {step === 5 && (
+        <div className="glass space-y-4 rounded-3xl p-6">
+          <p className="font-display text-2xl">The studio will now understand the product.</p>
+          <p className="text-sm leading-7 text-mist-300">
+            It determines what you sell, who it is for, the strongest benefits, the right tone, which assets to show, and
+            the call to action. Then it writes advertising copy — it will not simply repeat your description.
+          </p>
+          {selected ? (
+            <p className="text-sm text-gold-300">
+              Presenter: {selected.name} · Voice: {studioVoiceForPresenter(form.voiceId, selected.gender).label}
+            </p>
+          ) : null}
+          <Button disabled={busy} onClick={() => void analyze()}>
+            {busy ? "Analyzing…" : "Analyze and write the script"}
+          </Button>
+        </div>
+      )}
+
+      {step === 6 && script && (
+        <div className="space-y-5">
+          <p className="text-xs uppercase tracking-[0.2em] text-gold-400">Written by {script.provider}</p>
+          <h2 className="font-display text-3xl">{script.headline}</h2>
+          <Area label="Voiceover" value={script.voiceover} onChange={(e) => setScript({ ...script, voiceover: e.target.value })} />
+          <Field label="Call to action" value={script.cta} onChange={(e) => setScript({ ...script, cta: e.target.value })} />
+          <div className="flex flex-wrap gap-2">
+            {[
+              "Make it shorter",
+              "Make it longer",
+              "Make it more professional",
+              "Make it more energetic",
+              "Rewrite with AI",
+              "Regenerate",
+              "Translate",
+            ].map((instruction) => (
+              <Button key={instruction} variant="ghost" disabled={busy} onClick={() => void rewrite(instruction)}>
+                {instruction}
+              </Button>
+            ))}
+          </div>
+          <ol className="space-y-2 text-sm text-mist-300">
+            {script.beats.map((b) => (
+              <li key={b.id} className="glass rounded-2xl p-4">
+                <p>{b.line}</p>
+                <p className="text-xs text-mist-500">{b.visual}</p>
+              </li>
+            ))}
+          </ol>
+          <Button disabled={busy} onClick={() => void render()}>
+            {busy ? "Sending to the render desk…" : "Compose and render advertisement"}
+          </Button>
+        </div>
+      )}
+
+      {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+
+      <div className="flex justify-between">
+        <Button variant="ghost" disabled={step === 1} onClick={() => setStep((s) => s - 1)}>
+          Back
+        </Button>
+        {step < 5 ? <Button onClick={() => setStep((s) => s + 1)}>Continue</Button> : null}
+      </div>
+    </div>
+  );
+}
+
+function UploadBox({ projectHint }: { projectHint: string }) {
+  const [note, setNote] = useState("");
+  const label = useMemo(() => projectHint || "this brand", [projectHint]);
+  async function onFiles(files: FileList | null) {
+    if (!files?.length) return;
+    const body = new FormData();
+    for (const file of Array.from(files)) body.append("files", file);
+    body.append("kind", "product");
+    const res = await fetch("/api/assets", { method: "POST", body });
+    setNote(res.ok ? `Stored ${files.length} asset${files.length > 1 ? "s" : ""} for ${label}` : "Upload failed");
+  }
+  return (
+    <label className="glass block cursor-pointer rounded-3xl p-8 text-center">
+      <p className="font-display text-xl">Drop brand materials</p>
+      <p className="mt-2 text-sm text-mist-500">Logo, product photos, app screenshots, existing clips, graphics</p>
+      <input className="hidden" type="file" multiple onChange={(e) => void onFiles(e.target.files)} />
+      {note ? <p className="mt-3 text-xs text-gold-300">{note}</p> : null}
+    </label>
+  );
+}
