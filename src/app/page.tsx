@@ -62,6 +62,9 @@ export default async function LandingPage() {
           <Link href="/login">
             <Button variant="ghost">Enter the studio</Button>
           </Link>
+          <Link href="/listing-shots">
+            <Button variant="ghost">MysticTxt store shots</Button>
+          </Link>
         </div>
       </section>
 
