@@ -53,6 +53,8 @@ export async function renderStoreShots(input: StoreShotInput) {
         await storage().save(rel, Buffer.from(await res.arrayBuffer()), "image/png");
         bg = storage().resolve(rel);
       }
+    } else if (generated.imagePath) {
+      bg = generated.imagePath;
     }
   }
 
