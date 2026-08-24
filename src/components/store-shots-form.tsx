@@ -35,10 +35,10 @@ export function StoreShotsForm() {
           void onSubmit(e.currentTarget);
         }}
       >
-        <Select label="Store" name="store" defaultValue="play">
+        <Select label="Store" name="store" defaultValue="apple">
           {Object.values(STORE_FORMATS).map((s) => (
             <option key={s.id} value={s.id}>
-              {s.label} — {s.hint}
+              {s.label} {s.hint}
             </option>
           ))}
         </Select>
@@ -65,9 +65,17 @@ export function StoreShotsForm() {
             another app’s UI.
           </span>
         </label>
+        <div className="md:col-span-2">
+          <Field
+            label="Live website (optional)"
+            name="websiteUrl"
+            placeholder="https://www.mystictxt.com/advisors"
+            hint="The studio captures the real page on a phone viewport and frames that capture. It does not redraw the UI."
+          />
+        </div>
         <label className="block space-y-2">
           <span className="text-xs uppercase tracking-[0.18em] text-mist-500">Your real app screenshots</span>
-          <input className="w-full text-sm text-mist-300" type="file" name="screens" accept="image/*" multiple required />
+          <input className="w-full text-sm text-mist-300" type="file" name="screens" accept="image/*" multiple />
           <span className="block text-xs text-mist-500">
             These stay on the phone. AI frames them. It does not redraw your interface.
           </span>

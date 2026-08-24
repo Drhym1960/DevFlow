@@ -27,8 +27,12 @@ export async function POST(req: Request) {
   const form = await req.formData();
   const screens = form.getAll("screens").filter((f): f is File => f instanceof File && f.size > 0);
   const samples = form.getAll("samples").filter((f): f is File => f instanceof File && f.size > 0);
-  if (!screens.length) {
-    return NextResponse.json({ error: "Upload at least one screenshot of your real app." }, { status: 400 });
+  const websiteUrl = String(form.get("websiteUrl") || "").trim();
+  if (!screens.length && !websiteUrl) {
+    return NextResponse.json(
+      { error: "Upload a screenshot of your real app, or paste the live website address." },
+      { status: 400 },
+    );
   }
 
   const screenPaths: string[] = [];
@@ -52,6 +56,7 @@ export async function POST(req: Request) {
       notes: String(form.get("notes") || "").trim(),
       captions,
       screenPaths,
+      websiteUrl,
       samplePath,
       userId: user.id,
     });

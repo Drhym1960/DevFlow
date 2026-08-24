@@ -4,6 +4,7 @@ import { mkdir } from "fs/promises";
 import { images, storage } from "@/lib/ai/registry";
 import { captionsForScreens } from "./captions";
 import { storeSize } from "./sizes";
+import { publicHttpUrl } from "./url";
 
 function run(cmd: string, args: string[]) {
   return new Promise<void>((resolve, reject) => {
@@ -25,23 +26,47 @@ export type StoreShotInput = {
   notes: string;
   captions?: string[];
   screenPaths: string[];
+  websiteUrl?: string;
   samplePath?: string | null;
   userId: string;
 };
 
+export async function captureWebsiteScreen(userId: string, rawUrl: string) {
+  const url = publicHttpUrl(rawUrl);
+  const rel = `store-shots/${userId}/web-${Date.now()}.png`;
+  const full = storage().resolve(rel);
+  await mkdir(path.dirname(full), { recursive: true });
+  await run("python3", [
+    path.resolve("scripts/capture_page.py"),
+    "--url",
+    url,
+    "--out",
+    full,
+    "--wait-for",
+    "",
+    "--wait",
+    "16",
+  ]);
+  return full;
+}
+
 export async function renderStoreShots(input: StoreShotInput) {
-  if (!input.screenPaths.length) {
-    throw new Error("Upload at least one screenshot of your real app.");
+  const screenPaths = [...input.screenPaths];
+  if (input.websiteUrl?.trim()) {
+    screenPaths.unshift(await captureWebsiteScreen(input.userId, input.websiteUrl));
+  }
+  if (!screenPaths.length) {
+    throw new Error("Upload a screenshot of your real app, or paste the live website address.");
   }
   const size = storeSize(input.store);
   const lines = captionsForScreens({
     appName: input.appName,
     notes: input.notes,
-    screens: input.screenPaths.length,
+    screens: screenPaths.length,
     captions: input.captions,
   });
   let bg: string | undefined;
-  if (process.env.OPENAI_API_KEY) {
+  if (process.env.OPENAI_API_KEY && !input.samplePath) {
     const vibe = input.notes || input.appName || "a premium mobile product";
     const generated = await images().generate(
       `Vertical 9:16 marketing backdrop only, empty center for a phone, no device, no UI, no text, no logos. Mood matches: ${vibe}. Soft premium lighting.`,
@@ -60,7 +85,7 @@ export async function renderStoreShots(input: StoreShotInput) {
 
   const script = path.resolve("scripts/store_shot.py");
   const outs: { path: string; headline: string; width: number; height: number }[] = [];
-  for (const [i, screen] of input.screenPaths.entries()) {
+  for (const [i, screen] of screenPaths.entries()) {
     const rel = `store-shots/${input.userId}/${Date.now()}-${i + 1}.png`;
     const full = storage().resolve(rel);
     await mkdir(path.dirname(full), { recursive: true });

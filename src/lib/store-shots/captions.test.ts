@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { captionsForScreens } from "./captions";
 import { storeSize } from "./sizes";
+import { publicHttpUrl } from "./url";
 
 describe("store shots", () => {
   it("keeps client captions in order for each original screen", () => {
@@ -29,5 +30,11 @@ describe("store shots", () => {
   it("exports App Store iPhone size", () => {
     assert.equal(storeSize("apple").width, 1290);
     assert.equal(storeSize("apple").height, 2796);
+  });
+
+  it("accepts a public https website and rejects private hosts", () => {
+    assert.equal(publicHttpUrl("https://www.mystictxt.com/advisors"), "https://www.mystictxt.com/advisors");
+    assert.throws(() => publicHttpUrl("http://localhost:3000"), /cannot be captured/);
+    assert.throws(() => publicHttpUrl("ftp://example.com"), /http/);
   });
 });

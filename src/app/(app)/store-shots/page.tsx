@@ -9,7 +9,7 @@ export default async function StoreShotsPage() {
       <SectionTitle
         kicker="Store screenshots"
         title="Your app. Their store look."
-        copy="Upload samples of the Play Store or App Store style you want, then upload the real screens from your app. The studio keeps your original UI and frames it to match."
+        copy="Upload samples of the Play Store or App Store style you want, then paste your live website or upload the real screens from your app. The studio keeps your original UI and frames it to match."
       />
       <StoreShotsForm />
     </div>

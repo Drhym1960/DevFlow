@@ -7,12 +7,16 @@ import argparse
 import colorsys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
-SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
-SANS_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-SERIF_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
+SANS = "/usr/share/fonts/truetype/macos/Inter-Regular.ttf"
+SANS_MED = "/usr/share/fonts/truetype/macos/Inter-Medium.ttf"
+SERIF_BOLD = "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf"
+if not Path(SANS).exists():
+    SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    SANS_MED = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+if not Path(SERIF_BOLD).exists():
+    SERIF_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
 
 
 def font(path: str, size: int) -> ImageFont.FreeTypeFont:
@@ -58,12 +62,19 @@ def palette_from(sample: Path | None) -> tuple[tuple[int, int, int], tuple[int, 
     if not edge:
         edge = pixels
     avg = tuple(sum(c[i] for c in edge) // len(edge) for i in range(3))
-    # Keep a readable dark marketing field if the sample is very light.
     luma = 0.2126 * avg[0] + 0.7152 * avg[1] + 0.0722 * avg[2]
-    bg = avg if luma < 200 else (18, 16, 28)
-    hx, s, v = colorsys.rgb_to_hsv(avg[0] / 255, avg[1] / 255, avg[2] / 255)
-    accent = tuple(int(c * 255) for c in colorsys.hsv_to_rgb((hx + 0.08) % 1, min(0.55, s + 0.25), min(0.92, v + 0.25)))
-    if max(accent) < 80:
+    bg = avg
+    rich = max(
+        pixels,
+        key=lambda p: colorsys.rgb_to_hsv(p[0] / 255, p[1] / 255, p[2] / 255)[1] * colorsys.rgb_to_hsv(p[0] / 255, p[1] / 255, p[2] / 255)[2],
+    )
+    hx, s, v = colorsys.rgb_to_hsv(rich[0] / 255, rich[1] / 255, rich[2] / 255)
+    if s < 0.18:
+        hx, s, v = colorsys.rgb_to_hsv(avg[0] / 255, avg[1] / 255, avg[2] / 255)
+        s = min(0.55, s + 0.35)
+        v = min(0.78, max(0.45, v))
+    accent = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(hx, min(0.72, max(0.35, s)), min(0.78, max(0.42, v))))
+    if luma < 40:
         accent = (212, 168, 83)
     return bg, accent  # type: ignore[return-value]
 
@@ -91,45 +102,79 @@ def gradient(size: tuple[int, int], top: tuple[int, int, int], bottom: tuple[int
     return img
 
 
+def luma_of(rgb: tuple[int, int, int]) -> float:
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+
+
 def compose(args: argparse.Namespace) -> None:
     width, height = (int(n) for n in args.size.split("x"))
-    bg_rgb, accent = palette_from(Path(args.sample) if args.sample else None)
+    if getattr(args, "bg_hex", None):
+        bg_rgb = rgb_hex(args.bg_hex)
+        accent = rgb_hex(getattr(args, "accent_hex", None) or "#b69130")
+    else:
+        bg_rgb, accent = palette_from(Path(args.sample) if args.sample else None)
+    luma = luma_of(bg_rgb)
     if args.bg:
         canvas = Image.open(args.bg).convert("RGB").resize((width, height), Image.Resampling.LANCZOS)
         canvas = Image.blend(canvas, Image.new("RGB", (width, height), bg_rgb), 0.28)
+    elif luma > 150:
+        canvas = Image.new("RGB", (width, height), bg_rgb)
     else:
         darker = tuple(max(0, c - 40) for c in bg_rgb)
         canvas = gradient((width, height), bg_rgb, darker)
     canvas = canvas.convert("RGBA")
     draw = ImageDraw.Draw(canvas, "RGBA")
 
+    ink = (48, 40, 34) if luma > 150 else (244, 241, 234)
     headline = (args.headline or "").strip()
     sub = (args.sub or "").strip()
-    title_face = font(SERIF_BOLD, 72 if width >= 1200 else 58)
-    sub_face = font(SANS, 34 if width >= 1200 else 28)
+    title_face = font(SERIF_BOLD, int(width * 0.07) if width >= 1200 else int(width * 0.064))
+    sub_face = font(SANS_MED, int(width * 0.028) if width >= 1200 else int(width * 0.03))
+    align = (args.align or ("center" if luma > 150 else "left")).lower()
 
     pad = int(width * 0.08)
-    text_top = int(height * 0.07)
+    text_top = int(height * 0.055)
+    max_text = width - pad * 2
+    title_lh = int(width * 0.078)
+    sub_lh = int(width * 0.038)
+
+    def draw_lines(text, face, fill, line_h, gap=0):
+        nonlocal text_top
+        lines = wrap(draw, text, face, max_text)
+        for i, line in enumerate(lines):
+            tw = draw.textlength(line, font=face)
+            x = (width - tw) / 2 if align == "center" else pad
+            draw.text((x, text_top + i * line_h), line, font=face, fill=fill)
+        text_top += line_h * min(3, max(1, len(lines))) + gap
+
     if headline:
-        for i, line in enumerate(wrap(draw, headline, title_face, width - pad * 2)):
-            draw.text((pad, text_top + i * 84), line, font=title_face, fill=(244, 241, 234))
-        text_top += 84 * min(3, max(1, len(wrap(draw, headline, title_face, width - pad * 2)))) + 16
+        draw_lines(headline, title_face, ink, title_lh, 10)
     if sub:
-        for i, line in enumerate(wrap(draw, sub, sub_face, width - pad * 2)):
-            draw.text((pad, text_top + i * 42), line, font=sub_face, fill=accent)
+        sub_lines = wrap(draw, sub, sub_face, max_text)
+        draw_lines(sub, sub_face, accent, sub_lh, 6)
+        if align == "center":
+            bar_w = int(draw.textlength(sub_lines[-1], font=sub_face) * 0.55) if sub_lines else int(width * 0.16)
+            bar_w = max(80, min(bar_w, int(width * 0.4)))
+            draw.rounded_rectangle(
+                ((width - bar_w) / 2, text_top, (width + bar_w) / 2, text_top + 4),
+                radius=2,
+                fill=accent,
+            )
+            text_top += 22
 
     screen = Image.open(args.screen).convert("RGB")
-    frame_w = int(width * 0.72)
-    frame_h = int(height * 0.62)
+    frame_w = int(width * 0.78)
     frame_x = (width - frame_w) // 2
-    frame_y = int(height * 0.32)
-    bezel = 18
-    radius = 56
+    frame_y = max(text_top + int(height * 0.018), int(height * 0.18))
+    frame_h = height - frame_y - int(height * 0.03)
+    bezel = max(14, int(frame_w * 0.028))
+    radius = int(frame_w * 0.12)
     bezel_color = (8, 8, 12, 255)
+    halo = 70 if luma <= 150 else 36
     draw.rounded_rectangle(
         (frame_x - 4, frame_y - 4, frame_x + frame_w + 4, frame_y + frame_h + 4),
         radius=radius + 6,
-        fill=(accent[0], accent[1], accent[2], 90),
+        fill=(accent[0], accent[1], accent[2], halo),
     )
     draw.rounded_rectangle(
         (frame_x, frame_y, frame_x + frame_w, frame_y + frame_h),
@@ -139,16 +184,30 @@ def compose(args: argparse.Namespace) -> None:
     inner_w = frame_w - bezel * 2
     inner_h = frame_h - bezel * 2
     scale = max(inner_w / screen.width, inner_h / screen.height)
-    cover_src = screen.resize((max(1, int(screen.width * scale)), max(1, int(screen.height * scale))), Image.Resampling.LANCZOS)
+    cover_src = screen.resize(
+        (max(1, int(screen.width * scale)), max(1, int(screen.height * scale))),
+        Image.Resampling.LANCZOS,
+    )
     cx = max(0, (cover_src.width - inner_w) // 2)
-    cy = max(0, (cover_src.height - inner_h) // 2)
+    cy = 0 if (args.fit or "top") == "top" else max(0, (cover_src.height - inner_h) // 2)
+    cy = min(cy, max(0, cover_src.height - inner_h))
     cover = cover_src.crop((cx, cy, cx + inner_w, cy + inner_h))
     paste_rounded(canvas, cover, (frame_x + bezel, frame_y + bezel), radius - 12)
-    # Home indicator
+
+    island_w = int(inner_w * 0.34)
+    island_h = max(22, int(bezel * 1.55))
+    island_x = frame_x + (frame_w - island_w) // 2
+    island_y = frame_y + int(bezel * 0.42)
+    draw.rounded_rectangle(
+        (island_x, island_y, island_x + island_w, island_y + island_h),
+        radius=island_h // 2,
+        fill=bezel_color,
+    )
+
     bar_w = int(inner_w * 0.28)
     bar_x = frame_x + bezel + (inner_w - bar_w) // 2
-    bar_y = frame_y + frame_h - bezel - 14
-    draw.rounded_rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + 6), radius=3, fill=(255, 255, 255, 140))
+    bar_y = frame_y + frame_h - bezel - 16
+    draw.rounded_rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + 7), radius=4, fill=(255, 255, 255, 150))
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -164,6 +223,10 @@ def main() -> None:
     p.add_argument("--size", default="1080x1920")
     p.add_argument("--headline", default="")
     p.add_argument("--sub", default="")
+    p.add_argument("--align", default="")
+    p.add_argument("--bg-hex")
+    p.add_argument("--accent-hex")
+    p.add_argument("--fit", default="top")
     compose(p.parse_args())
 
 
