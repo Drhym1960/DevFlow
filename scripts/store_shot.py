@@ -206,6 +206,7 @@ def paste_iphone16(
     screen_radius = max(24, radius - bezel)
 
     sample = screen.resize((8, 8), Image.Resampling.BOX).getpixel((1, 1))
+    bar_ink = (244, 241, 234) if luma_of(sample) < 140 else ink
     bar = Image.new("RGB", (inner_w, status_h), sample)
     content = cover_top(screen, (inner_w, inner_h - status_h))
     phone_screen = Image.new("RGB", (inner_w, inner_h), sample)
@@ -215,8 +216,8 @@ def paste_iphone16(
 
     time_face = font(SANS_BOLD, max(14, int(status_h * 0.38)))
     time_y = inner_y + int(status_h * 0.28)
-    draw.text((inner_x + int(inner_w * 0.07), time_y), "9:41", font=time_face, fill=ink)
-    draw_status_icons(draw, inner_x + inner_w - int(inner_w * 0.06), inner_y + status_h // 2 + 1, ink, max(0.7, pt))
+    draw.text((inner_x + int(inner_w * 0.07), time_y), "9:41", font=time_face, fill=bar_ink)
+    draw_status_icons(draw, inner_x + inner_w - int(inner_w * 0.06), inner_y + status_h // 2 + 1, bar_ink, max(0.7, pt))
     draw_dynamic_island(draw, inner_x + inner_w // 2, inner_y + max(6, int(8 * pt)), island_w, island_h)
 
     bar_w = int(inner_w * 0.30)
