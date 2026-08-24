@@ -20,8 +20,8 @@ export default function ListingShotsPage() {
         <p className="text-xs uppercase tracking-[0.32em] text-[#B69130]">DevFlow listing pack</p>
         <h1 className="mt-3 font-display text-4xl">MysticTxt App Store screenshots</h1>
         <p className="mt-4 max-w-2xl font-sans text-base leading-7 text-[#6B5420]">
-          These are 1290 x 2796, RGB, no alpha. Right click an image and save it, or use Download PNG. Upload them into
-          App Store Connect under 6.9" Display.
+          These are 1080 x 2340, RGB, no alpha. Right click an image and save it, or use Download PNG. Upload them into
+          App Store Connect under 6.1" Display.
         </p>
         <p className="mt-3 font-sans text-sm text-[#6B5420]">
           <Link className="text-[#B69130]" href="/">
@@ -34,15 +34,15 @@ export default function ListingShotsPage() {
         </p>
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {SHOTS.map((shot) => {
-            const png = `/store-shots/1290x2796/${shot.file}.png`;
-            const jpg = `/store-shots/1290x2796/${shot.file}.jpg`;
+            const png = `/store-shots/1080x2340/${shot.file}.png`;
+            const jpg = `/store-shots/1080x2340/${shot.file}.jpg`;
             return (
               <figure key={shot.file} className="overflow-hidden rounded-[28px] bg-white shadow-[0_16px_40px_rgba(59,42,26,0.08)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={jpg} alt={shot.title} width={1290} height={2796} className="w-full bg-[#F4EAD8]" />
+                <img src={jpg} alt={shot.title} width={1080} height={2340} className="w-full bg-[#F4EAD8]" />
                 <figcaption className="space-y-2 p-4 font-sans">
                   <p className="font-display text-lg">{shot.title}</p>
-                  <p className="text-sm text-[#6B5420]">1290 × 2796</p>
+                  <p className="text-sm text-[#6B5420]">1080 × 2340</p>
                   <p className="flex gap-4 text-sm">
                     <a className="font-semibold text-[#B69130]" href={png} download>
                       Download PNG

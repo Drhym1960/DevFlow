@@ -27,9 +27,14 @@ describe("store shots", () => {
     assert.equal(storeSize("play").height, 1920);
   });
 
+  it("exports App Store iPhone 6.1 inch size", () => {
+    assert.equal(storeSize("apple").width, 1080);
+    assert.equal(storeSize("apple").height, 2340);
+  });
+
   it("exports App Store iPhone 6.9 inch size", () => {
-    assert.equal(storeSize("apple").width, 1290);
-    assert.equal(storeSize("apple").height, 2796);
+    assert.equal(storeSize("apple69").width, 1290);
+    assert.equal(storeSize("apple69").height, 2796);
   });
 
   it("exports App Store iPhone 16 size", () => {

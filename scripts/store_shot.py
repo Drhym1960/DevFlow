@@ -300,7 +300,7 @@ def main() -> None:
     p.add_argument("--sample")
     p.add_argument("--bg")
     p.add_argument("--out", required=True)
-    p.add_argument("--size", default="1320x2868")
+    p.add_argument("--size", default="1080x2340")
     p.add_argument("--headline", default="")
     p.add_argument("--sub", default="")
     p.add_argument("--align", default="")
