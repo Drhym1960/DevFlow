@@ -61,8 +61,7 @@ export function StoreShotsForm() {
           <span className="text-xs uppercase tracking-[0.18em] text-mist-500">Sample look you want</span>
           <input className="w-full text-sm text-mist-300" type="file" name="samples" accept="image/*" multiple />
           <span className="block text-xs text-mist-500">
-            Upload Play Store or App Store shots you like. The studio reads colour and mood from these. It does not copy
-            another app’s UI.
+            Upload App Store shots you like. The studio reads colour and mood from these. It does not copy another app’s UI.
           </span>
         </label>
         <div className="md:col-span-2">
@@ -70,7 +69,7 @@ export function StoreShotsForm() {
             label="Live website (optional)"
             name="websiteUrl"
             placeholder="https://www.mystictxt.com/advisors"
-            hint="The studio captures the real page on a phone viewport and frames that capture. It does not redraw the UI."
+            hint="Captured on an iPhone 16 viewport (393 by 852 at 3x). The real page stays on the phone. It does not redraw the UI."
           />
         </div>
         <label className="block space-y-2">

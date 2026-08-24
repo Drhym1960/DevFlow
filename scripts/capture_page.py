@@ -105,14 +105,16 @@ def capture(args: argparse.Namespace) -> None:
                 "height": args.height,
                 "deviceScaleFactor": args.scale,
                 "mobile": True,
+                "screenWidth": args.width,
+                "screenHeight": args.height,
             },
         )
         cdp.call(
             "Emulation.setUserAgentOverride",
             {
                 "userAgent": (
-                    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
-                    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+                    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
                 ),
                 "platform": "iPhone",
             },
@@ -166,7 +168,7 @@ def capture(args: argparse.Namespace) -> None:
     finally:
         if cdp is not None:
             cdp.close()
-        if proc is not None:
+        if proc is not None and not args.keep:
             proc.terminate()
             try:
                 proc.wait(timeout=5)
@@ -178,13 +180,15 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--url", required=True)
     p.add_argument("--out", required=True)
-    p.add_argument("--width", type=int, default=390)
-    p.add_argument("--height", type=int, default=844)
+    p.add_argument("--width", type=int, default=393)
+    p.add_argument("--height", type=int, default=852)
     p.add_argument("--scale", type=float, default=3)
     p.add_argument("--wait", type=int, default=18)
     p.add_argument("--wait-for", default="")
     p.add_argument("--port", type=int, default=9333)
-    capture(p.parse_args())
+    p.add_argument("--keep", action="store_true")
+    args = p.parse_args()
+    capture(args)
 
 
 if __name__ == "__main__":

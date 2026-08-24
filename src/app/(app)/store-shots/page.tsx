@@ -9,7 +9,7 @@ export default async function StoreShotsPage() {
       <SectionTitle
         kicker="Store screenshots"
         title="Your app. Their store look."
-        copy="Upload samples of the Play Store or App Store style you want, then paste your live website or upload the real screens from your app. The studio keeps your original UI and frames it to match."
+        copy="Paste your live website or upload real screens. The studio captures them on an iPhone 16 viewport and frames them for the App Store. Original UI stays on the phone. It does not redraw the interface."
       />
       <StoreShotsForm />
     </div>
