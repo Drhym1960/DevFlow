@@ -24,6 +24,9 @@ export default async function DashboardPage() {
         <Link href="/videos/new">
           <Button>Create New Video</Button>
         </Link>
+        <Link href="/store-shots">
+          <Button variant="ghost">Store Screenshots</Button>
+        </Link>
         <Link href="/presenters/create">
           <Button variant="ghost">Create My Presenter</Button>
         </Link>

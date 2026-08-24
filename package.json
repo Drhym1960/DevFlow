@@ -8,7 +8,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test src/lib/plans.test.ts src/lib/engine/storyboard.test.ts src/lib/ai/providers/llm/studio-copy.test.ts src/lib/presenters/motion-prompt.test.ts src/lib/ai/providers/tts/voices.test.ts src/lib/studio/expand-idea.test.ts",
+    "test": "tsx --test src/lib/plans.test.ts src/lib/engine/storyboard.test.ts src/lib/ai/providers/llm/studio-copy.test.ts src/lib/presenters/motion-prompt.test.ts src/lib/ai/providers/tts/voices.test.ts src/lib/studio/expand-idea.test.ts src/lib/store-shots/captions.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",

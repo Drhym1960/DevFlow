@@ -101,6 +101,8 @@ The **Studio Copy Engine** is a first-class on-device marketing writer. It produ
 
 Clients can **write anything** (`POST /api/studio/from-idea`). The studio expands the sentence into a brief, generates a presenter portrait when a person is described (or picks a library model), generates product stills, writes the script, and can render immediately. Voice is a client choice on every path: library, photo, describe-a-model, and idea.
 
+**Store screenshots** (`POST /api/store-shots`): the client uploads sample Play Store or App Store frames they like, plus the real screens from their app. The compositor keeps the original UI pixels inside a device frame and matches colour and mood from the sample. It does not redraw the app.
+
 ## Advertisement engine stages
 
 1. **Analyzing Brand** — extract product, audience, benefits, best assets, CTA

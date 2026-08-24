@@ -54,6 +54,7 @@ Missing vendor keys never invent a completed third-party generation. The Account
 - Presenter Library by marketing category and region
 - Create My Presenter + My Presenters
 - Advertisement wizard: write an idea **or** pick a model and a voice, then script and render
+- Store screenshots: upload a sample look plus your real app screens
 - Scene editor
 - Brand kits, assets, templates, billing
 - Render progress: Analyzing Brand → Writing Script → Creating Voice → Generating Presenter → Building Scenes → Adding Branding → Rendering Video

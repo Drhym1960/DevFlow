@@ -109,4 +109,6 @@ export const ASSET_KINDS = [
   { id: "screenshot", label: "App / website screenshot" },
   { id: "video", label: "Existing video" },
   { id: "graphic", label: "Promotional graphic" },
+  { id: "store-sample", label: "Store screenshot sample" },
+  { id: "store-screen", label: "App screenshot" },
 ] as const;

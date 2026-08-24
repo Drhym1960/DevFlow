@@ -5,6 +5,7 @@ import { getPlan } from "@/lib/plans";
 const NAV = [
   { href: "/dashboard", label: "Overview" },
   { href: "/videos/new", label: "Create New Video" },
+  { href: "/store-shots", label: "Store Screenshots" },
   { href: "/projects", label: "My Projects" },
   { href: "/presenters/mine", label: "My Presenters" },
   { href: "/presenters", label: "Presenter Library" },

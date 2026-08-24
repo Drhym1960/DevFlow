@@ -22,7 +22,7 @@ const STUDIO = [
   { href: "/presenters/create", title: "Upload a photo", copy: "A client or director becomes the speaker." },
   { href: "/videos/new", title: "Create a film", copy: "Write an idea, or pick a model and a voice." },
   { href: "/brand-kits", title: "Brand kits", copy: "Colours, product, CTA — reused on every film." },
-  { href: "/assets", title: "Product screens", copy: "Screenshots sit beside the presenter while they move." },
+  { href: "/store-shots", title: "Store screenshots", copy: "Upload a sample look and your real app screens." },
 ];
 
 export default async function LandingPage() {
