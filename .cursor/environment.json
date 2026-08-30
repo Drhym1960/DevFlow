@@ -1,0 +1,14 @@
+{
+  "name": "DevFlow AI Advertising Studio",
+  "install": "[ -f .env ] || cp .env.example .env; npm install && npx prisma db push && npm run db:seed",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "npm run dev",
+      "description": "Next.js dev server (App Router) on http://localhost:3000"
+    }
+  ],
+  "ports": [
+    { "name": "web", "port": 3000 }
+  ]
+}
