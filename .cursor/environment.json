@@ -1,6 +1,6 @@
 {
   "name": "DevFlow AI Advertising Studio",
-  "install": "cp -n .env.example .env || true; npm install && npx prisma db push && npm run db:seed",
+  "install": "[ -f .env ] || cp .env.example .env; npm install && npx prisma db push && npm run db:seed",
   "terminals": [
     {
       "name": "dev",
